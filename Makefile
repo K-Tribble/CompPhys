@@ -30,3 +30,6 @@ clean:
 rebuild: clean all
 
 .PHONY: all clean rebuild
+
+count:
+	find . -name '*.cpp' -o -name '*.hpp' | xargs wc -l
