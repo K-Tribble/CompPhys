@@ -489,17 +489,19 @@ d64 Matrix::min() const {
     return *std::min_element(data_.begin(), data_.end());
 }
 
-void Matrix::print() const {
-    for (u32 i = 0; i < rows_; ++i) {
+std::ostream& operator<<(std::ostream& os, const Matrix& m) {
+    for (u32 i = 0; i < m.rows(); ++i) {
         u32 count = 0;
-        for (u32 j = 0; j < cols_; ++j) {
-            if (count == cols_ - 1) {
-                std::cout << data_[linearIndex(i, j)] << std::endl;
+        for (u32 j = 0; j < m.cols(); ++j) {
+            if (count == m.cols() - 1) {
+                std::cout << m(i, j) << std::endl;
             } else {
-                std::cout << data_[linearIndex(i, j)] << ", ";
+                std::cout << m(i, j) << ", ";
             }
 
             ++count;
         }
     }
+
+    return os;
 }

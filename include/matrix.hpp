@@ -7,6 +7,7 @@
 #include <random>
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 using d64 = double;
 using u32 = std::size_t;
@@ -84,8 +85,6 @@ public:
     d64 max() const;
     d64 min() const;
 
-    void print() const;
-
 private:
     u32 rows_, cols_;
     std::vector<d64> data_;
@@ -93,3 +92,5 @@ private:
     u32 linearIndex(u32 r, u32 c) const;
     Matrix elementWise(const Matrix& other, std::function<d64(d64, d64)> f) const;
 };
+
+std::ostream& operator<<(std::ostream&, const Matrix&);
