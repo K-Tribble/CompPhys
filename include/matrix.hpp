@@ -75,6 +75,7 @@ public:
 
     Matrix getCofactorMatrix() const;
     Matrix inverse() const;
+    Matrix cofactorInversion() const;
 
     d64 sumElements() const;
 

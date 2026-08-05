@@ -44,7 +44,7 @@ Matrix Matrix::identity(u32 n) {
 
 Matrix Matrix::diagonal(const std::vector<d64>& diag) {
     u32 n = diag.size();
-    Matrix m(n, n, 1.0);
+    Matrix m(n, n, 0.0);
 
     for (u32 i = 0; i < n; ++i) {
         m(i, i) = diag[i];
@@ -327,12 +327,64 @@ Matrix Matrix::getCofactorMatrix() const {
     return cofactor;
 }
 
-Matrix Matrix::inverse() const {
+Matrix Matrix::cofactorInversion() const {
     d64 det = (*this).determinant();
+    if (rows_ != cols_) {
+        throw std::invalid_argument("Cannot invert rectangular matrix");
+    }
     if (std::fabs(det) < kDefaultAbsTol) {
         throw std::invalid_argument("Cannot invert singular matrix");
     }
     return (*this).getCofactorMatrix().transpose() / det;
+}
+
+Matrix Matrix::inverse() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("Cannot invert rectangular matrix");
+    }
+
+    const u32 n = rows_;
+
+    Matrix A = *this;
+    Matrix I = identity(n);
+
+    const d64 tolerance = std::numeric_limits<d64>::epsilon() * kSingularPivotTol;
+
+    for (u32 j = 0; j < n; ++j) {
+        u32 pivot_row = j;
+        d64 maxVal = std::fabs(A(j, j));
+        for(u32 i = j + 1; i < n; ++i) {
+            if (std::fabs(A(i, j)) > maxVal) {
+                maxVal = std::fabs(A(i, j));
+                pivot_row = i;
+            }
+        }
+
+        if (maxVal < tolerance) {
+                throw std::runtime_error("Matrix is singular and cannot be inverted.");
+        }
+
+        A.swapRows(j, pivot_row);
+        I.swapRows(j, pivot_row);
+
+        d64 pivot = A(j, j);
+
+        for (u32 i = 0; i < n; ++i) {
+            A(j, i) /= pivot;
+            I(j, i) /= pivot;
+        }
+
+        for (u32 i = 0; i < n; ++i) {
+            if (i == j) continue;
+            d64 factor = A(i, j);
+            for (u32 col = 0; col < n; ++col) {
+                A(i, col) -= factor * A(j, col);
+                I(i, col) -= factor * I(j, col);
+            }
+        }
+    }
+
+    return I;
 }
 
 Matrix Matrix::operator+(const Matrix& other) const {
@@ -493,9 +545,9 @@ std::ostream& operator<<(std::ostream& os, const Matrix& m) {
         u32 count = 0;
         for (u32 j = 0; j < m.cols(); ++j) {
             if (count == m.cols() - 1) {
-                std::cout << m(i, j) << std::endl;
+                os << m(i, j) << std::endl;
             } else {
-                std::cout << m(i, j) << ", ";
+                os << m(i, j) << ", ";
             }
 
             ++count;

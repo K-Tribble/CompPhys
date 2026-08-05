@@ -5,7 +5,10 @@
 namespace linalg {
 
 Vec Vec::basis(u32 n, u32 i) {
-    Vec v(n);
+    if (i > n - 1) {
+        throw std::invalid_argument("Index of out range");
+    }
+    Vec v(n, 0.0);
     v(i) = 1;
 
     return v;
@@ -141,9 +144,9 @@ std::ostream& operator<<(std::ostream& os, const Vec& v) {
         if (i == 0) {
             std::cout << "(" << v(i) << ", ";
         } else if (i == v.size() - 1) {
-            std::cout << v(i) << ")" << std::endl;
+            os << v(i) << ")" << std::endl;
         } else {
-            std::cout << v(i) << ", ";
+            os << v(i) << ", ";
         }
     }
 
