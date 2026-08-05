@@ -6,10 +6,10 @@ CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
 
 # Source and object files
 SRC = src/main.cpp src/matrix.cpp src/vec.cpp src/linalg_interop.cpp
-OBJ = $(SRC:.cpp=.o)
+OBJ = $(SRC:src/%.cpp=build/%.o)
 
 # Executable name
-TARGET = main
+TARGET = build/main
 
 # Default target
 all: $(TARGET)
@@ -18,13 +18,14 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CXX) $(OBJ) -o $(TARGET)
 
-# Compile source files
-src/%.o: src/%.cpp
+# Compile source files into build/
+build/%.o: src/%.cpp
+	@mkdir -p build
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -rf build
 
 # Rebuild from scratch
 rebuild: clean all
@@ -32,4 +33,4 @@ rebuild: clean all
 .PHONY: all clean rebuild
 
 count:
-	find . -name '*.cpp' -o -name '*.hpp' | xargs wc -l
+	find . \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 wc -l
