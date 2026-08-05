@@ -1,5 +1,6 @@
 #include "vec.hpp"
 #include "linalg_common.hpp"
+#include <iostream>
 
 namespace linalg {
 
@@ -94,10 +95,14 @@ d64 Vec::min() const {
     return detail::minElement(data_); 
 }
 
-d64 Vec::dot(const Vec& o) const {
-    if (data_.size() != o.data_.size()) throw std::invalid_argument("shape mismatch");
+d64 Vec::dot(const Vec& other) const {
+    if (data_.size() != other.data_.size()) {
+        throw std::invalid_argument("shape mismatch");
+    }
     d64 s = 0.0;
-    for (u32 i = 0; i < data_.size(); ++i) s += data_[i] * o.data_[i];
+    for (u32 i = 0; i < data_.size(); ++i) {
+        s += data_[i] * other.data_[i];
+    }
     return s;
 }
 
@@ -129,6 +134,20 @@ Vec Vec::cross(const Vec& other) const {
         data_[2]*other.data_[0] - data_[0]*other.data_[2],
         data_[0]*other.data_[1] - data_[1]*other.data_[0]
     });
+}
+
+std::ostream& operator<<(std::ostream& os, const Vec& v) {
+    for (u32 i = 0; i < v.size(); ++i) {
+        if (i == 0) {
+            std::cout << "(" << v(i) << ", ";
+        } else if (i == v.size() - 1) {
+            std::cout << v(i) << ")" << std::endl;
+        } else {
+            std::cout << v(i) << ", ";
+        }
+    }
+
+    return os;
 }
 
 } // namespace linalg

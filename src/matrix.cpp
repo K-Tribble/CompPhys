@@ -78,27 +78,37 @@ u32 Matrix::cols() const {
 
 std::vector<Vec> Matrix::getRows() const {
     std::vector<Vec> rows;
+    rows.reserve(rows_);
 
     for (u32 i = 0; i < rows_; ++i) {
-        std::vector<d64> row_i(cols_);
+        std::vector<d64> row;
+        row.reserve(cols_);
+
         for (u32 j = 0; j < cols_; ++j) {
-            row_i.push_back(data_[linearIndex(i, j)]);
+            row.push_back(data_[linearIndex(i, j)]);
         }
-        rows.push_back(Vec(row_i));
+
+        rows.emplace_back(row);
     }
+
     return rows;
 }
 
 std::vector<Vec> Matrix::getCols() const {
     std::vector<Vec> cols;
+    cols.reserve(cols_);
 
     for (u32 j = 0; j < cols_; ++j) {
-        std::vector<d64> col_j(cols_);
+        std::vector<d64> col;
+        col.reserve(rows_);
+
         for (u32 i = 0; i < rows_; ++i) {
-            col_j.push_back(data_[linearIndex(i, j)]);
+            col.push_back(data_[linearIndex(i, j)]);
         }
-        cols.push_back(Vec(col_j));
+
+        cols.emplace_back(col);
     }
+
     return cols;
 }
 

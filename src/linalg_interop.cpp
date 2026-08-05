@@ -4,10 +4,11 @@
 
 namespace linalg {
 
-Vec operator*(const Matrix&m, const Vec& v) {
+Vec operator*(const Matrix& m, const Vec& v) {
     if (m.cols() != v.size()) {
         throw std::invalid_argument("shape mismatch");
     }
+    
     Vec product(v.size());
 
     std::vector<Vec> rows = m.getRows();

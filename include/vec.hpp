@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 namespace linalg {
 
@@ -51,5 +52,7 @@ public:
 private:
     std::vector<d64> data_;
 };
+
+std::ostream& operator<<(std::ostream&, const Vec&);
 
 } // namespace linalg
