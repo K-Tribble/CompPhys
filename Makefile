@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
 
 # Source and object files
-SRC = src/main.cpp src/matrix.cpp
+SRC = src/main.cpp src/matrix.cpp src/vec.cpp
 OBJ = $(SRC:.cpp=.o)
 
 # Executable name

@@ -8,15 +8,17 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include "linalg_common.hpp"
+#include "vec.hpp"
 
 using d64 = double;
 using u32 = std::size_t;
 
 
+namespace linalg {
+
 class Matrix {
 public:
-    static constexpr d64 kDefaultAbsTol = 1e-9;
-    static constexpr d64 kDefaultRelTol = 1e-9;
     static constexpr d64 kSingularPivotTol = 100.0; // multiplier on machine epsilon 
 
     Matrix(u32 rows, u32 cols, d64 init = 0.0);
@@ -36,6 +38,9 @@ public:
     u32 rows() const;
     u32 cols() const;
 
+    std::vector<Vec> getRows() const;
+    std::vector<Vec> getCols() const;
+
     std::array<u32, 2> shape() const;
 
     void swapRows(u32 row1, u32 row2);
@@ -53,9 +58,9 @@ public:
     Matrix& operator/=(d64 s);
 
     bool operator==(const Matrix& other) const;
-    bool isApprox(const Matrix& other, d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
-    bool isZero(d64 absTol = kDefaultAbsTol) const;
-    bool isSymmetric(d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
+    bool isApprox(const Matrix& other, d64 absTol = linalg::kDefaultAbsTol, d64 relTol = linalg::kDefaultRelTol) const;
+    bool isZero(d64 absTol = linalg::kDefaultAbsTol) const;
+    bool isSymmetric(d64 absTol = linalg::kDefaultAbsTol, d64 relTol = linalg::kDefaultRelTol) const;
 
     Matrix absDiff(const Matrix& other) const;
 
@@ -90,7 +95,8 @@ private:
     std::vector<d64> data_;
 
     u32 linearIndex(u32 r, u32 c) const;
-    Matrix elementWise(const Matrix& other, std::function<d64(d64, d64)> f) const;
 };
 
 std::ostream& operator<<(std::ostream&, const Matrix&);
+
+} // namespace linalg

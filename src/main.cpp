@@ -1,5 +1,10 @@
 #include <iostream>
 #include "matrix.hpp"
+#include <vec.hpp>
+#include "linalg_common.hpp"
+#include <linalg_interop.hpp>
+
+using namespace linalg;
 
 int main() {
     Matrix m{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};

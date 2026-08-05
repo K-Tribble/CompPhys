@@ -1,4 +1,5 @@
 #include "matrix.hpp"
+#include "linalg_common.hpp"
 #include <stdexcept>
 #include <cmath>
 #include <utility>
@@ -6,8 +7,9 @@
 #include <cassert>
 #include <limits>
 #include <numeric>
-#include <iostream> 
+#include <iostream>
 
+namespace linalg {
 
 Matrix::Matrix(u32 rows, u32 cols, d64 init)
     : rows_(rows), cols_(cols), data_(rows * cols, init) {}
@@ -74,6 +76,32 @@ u32 Matrix::cols() const {
     return cols_;
 }
 
+std::vector<Vec> Matrix::getRows() const {
+    std::vector<Vec> rows;
+
+    for (u32 i = 0; i < rows_; ++i) {
+        std::vector<d64> row_i(cols_);
+        for (u32 j = 0; j < cols_; ++j) {
+            row_i.push_back(data_[linearIndex(i, j)]);
+        }
+        rows.push_back(Vec(row_i));
+    }
+    return rows;
+}
+
+std::vector<Vec> Matrix::getCols() const {
+    std::vector<Vec> cols;
+
+    for (u32 j = 0; j < cols_; ++j) {
+        std::vector<d64> col_j(cols_);
+        for (u32 i = 0; i < rows_; ++i) {
+            col_j.push_back(data_[linearIndex(i, j)]);
+        }
+        cols.push_back(Vec(col_j));
+    }
+    return cols;
+}
+
 std::array<u32, 2> Matrix::shape() const {
     return {rows_, cols_};
 }
@@ -117,18 +145,13 @@ Matrix Matrix::operator*(const Matrix& other) const {
 Matrix Matrix::operator*(d64 s) const {
     Matrix result(*this);
 
-    for (auto& v : result.data_)
-        v *= s;
+    detail::scaleInPlace(result.data_, s);
 
     return result;
 }
 
 Matrix& Matrix::operator*=(d64 s) {
-    for (u32 i = 0; i < rows_; ++i) {
-        for (u32 j = 0; j < cols_; ++j) {
-            (*this)(i, j) *= s;
-        }
-    }
+    detail::scaleInPlace(data_, s);
 
     return *this;
 }
@@ -136,40 +159,29 @@ Matrix& Matrix::operator*=(d64 s) {
 Matrix Matrix::operator/(d64 s) const {
     Matrix result(*this);
 
-    for (auto& v : result.data_)
-        v /= s;
+    detail::scaleInPlace(result.data_, 1.0 / s);
 
     return result;
 }
 
 Matrix& Matrix::operator/=(d64 s) {
-    for (u32 i = 0; i < rows_; ++i) {
-        for (u32 j = 0; j < cols_; ++j) {
-            (*this)(i, j) /= s;
-        }
-    }
+    detail::scaleInPlace(data_, 1.0 / s);
 
     return *this;
 }
 
 bool Matrix::operator==(const Matrix& other) const {
-    return rows_ == other.rows_ & cols_ == other.cols_ && data_ == other.data_;
+    return rows_ == other.rows_ && cols_ == other.cols_ && data_ == other.data_;
 }
 
 bool Matrix::isApprox(const Matrix& other, d64 absTol, d64 relTol) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) return false;
 
-    for (u32 i = 0; i < data_.size(); ++i) {
-        d64 diff = std::fabs(data_[i] - other.data_[i]);
-        d64 largest = std::max(std::fabs(data_[i]), std::fabs(other.data_[i]));
-        if (diff > std::max(absTol, relTol * largest)) return false;
-    }
-
-    return true;
+    return detail::approxEqual(data_, other.data_, absTol, relTol);
 }
 
 bool Matrix::isZero(d64 absTol) const {
-    return std::all_of(data_.begin(), data_.end(), [absTol](d64 v){return std::fabs(v) <= absTol;});
+    return detail::isZero(data_, absTol);
 }
 
 bool Matrix::isSymmetric(d64 absTol, d64 relTol) const {
@@ -189,7 +201,11 @@ bool Matrix::isSymmetric(d64 absTol, d64 relTol) const {
 }
 
 Matrix Matrix::absDiff(const Matrix& other) const {
-    return elementWise(other, [](d64 a, d64 b) {return std::fabs(a - b);});
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
+        throw std::invalid_argument("Shape mismatch");
+    }
+
+    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, [](d64 a, d64 b) {return std::fabs(a - b);}));
 }
 
 Matrix Matrix::transpose() const {
@@ -310,78 +326,56 @@ Matrix Matrix::inverse() const {
 }
 
 Matrix Matrix::operator+(const Matrix& other) const {
-    return elementWise(other, std::plus<d64>());
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
+        throw std::invalid_argument("Shape mismatch");
+    }
+    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::plus<d64>()));
 }
 
 Matrix& Matrix::operator+=(const Matrix& other) {
-    if (rows_ != other.rows_ || cols_ != other.cols_)
-    {
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    for (u32 i = 0; i < rows_; ++i) {
-        for (u32 j = 0; j < cols_; ++j) {
-            (*this)(i, j) += other(i, j);
-        }
-    }
+    detail::elementWiseInPlace(data_, other.data_, std::plus<d64>());
 
     return *this;
 }
 
 Matrix Matrix::operator-(const Matrix& other) const {
-    return elementWise(other, std::minus<d64>());
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
+        throw std::invalid_argument("Shape mismatch");
+    }
+        return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::minus<d64>()));
 }
 
 Matrix& Matrix::operator-=(const Matrix& other) {
-    if (rows_ != other.rows_ || cols_ != other.cols_)
-    {
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    for (u32 i = 0; i < rows_; ++i) {
-        for (u32 j = 0; j < cols_; ++j) {
-            (*this)(i, j) -= other(i, j);
-        }
-    }
+    detail::elementWiseInPlace(data_, other.data_, std::minus<d64>());
 
     return *this;
 }
 
 Matrix Matrix::hadamard(const Matrix& other) const {
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
+        throw std::invalid_argument("shape mismatch");
+    }
     Matrix result(*this);
-    result.hadamardInPlace(other);
-    return result;
+
+    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::multiplies<d64>()));
 }
 
 Matrix& Matrix::hadamardInPlace(const Matrix& other) {
-    if (rows_ != other.rows_ || cols_ != other.cols_)
+    if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
-
-    for (u32 i = 0; i < rows_; ++i) {
-        for (u32 j = 0; j < cols_; ++j) {
-            (*this)(i, j) *= other(i, j);
-        }
     }
+
+    detail::elementWiseInPlace(data_, other.data_, std::multiplies<d64>());
 
     return *this;
-}
-
-Matrix Matrix::elementWise(const Matrix& other, std::function<d64(d64,d64)> f) const {
-    if (rows_ != other.rows_ || cols_ != other.cols_)
-    {
-        throw std::invalid_argument("shape mismatch");
-    }
-
-
-    Matrix result(rows_, cols_);
-
-
-    for (u32 i = 0; i < data_.size(); ++i) {
-        result.data_[i] = f(data_[i], other.data_[i]);
-    }
-
-
-    return result;
 }
 
 Matrix Matrix::sliceByRows(u32 start, u32 finish) const {
@@ -427,12 +421,7 @@ Matrix Matrix::sliceByCols(u32 start, u32 finish) const {
 }
 
 d64 Matrix::sumElements() const {
-    d64 sum = 0;
-    for (auto& v : data_) {
-        sum += v;
-    }
-
-    return sum;
+    return detail::sumElements(data_);
 }
 
 // axis = 0 means sum up each column, leaving a row vector
@@ -481,12 +470,12 @@ Matrix& Matrix::matmulInto(const Matrix& other, Matrix& out) const {
 }
 
 d64 Matrix::max() const {
-    return *std::max_element(data_.begin(), data_.end());
+    return detail::maxElement(data_);
 }
 
 
 d64 Matrix::min() const {
-    return *std::min_element(data_.begin(), data_.end());
+    return detail::minElement(data_);
 }
 
 std::ostream& operator<<(std::ostream& os, const Matrix& m) {
@@ -505,3 +494,5 @@ std::ostream& operator<<(std::ostream& os, const Matrix& m) {
 
     return os;
 }
+
+} // namespace linalg
