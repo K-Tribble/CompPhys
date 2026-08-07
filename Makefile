@@ -34,3 +34,6 @@ rebuild: clean all
 
 count:
 	find . \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 wc -l
+
+main:
+	./build/main
