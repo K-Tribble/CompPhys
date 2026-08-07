@@ -68,6 +68,17 @@ double Matrix::operator()(u32 r, u32 c) const {
     return data_[linearIndex(r, c)];
 }
 
+Vec Matrix::operator()(u32 i) const {
+    std::vector<d64> buff; 
+    buff.reserve(cols_);
+
+    for (u32 j = 0; j < cols_; ++j) {
+        buff.emplace_back(linearIndex(i, j));
+    }
+
+    return Vec(buff);
+}
+
 u32 Matrix::rows() const {
     return rows_;
 }
@@ -88,7 +99,7 @@ std::vector<Vec> Matrix::getRows() const {
             row.push_back(data_[linearIndex(i, j)]);
         }
 
-        rows.emplace_back(row);
+        rows.emplace_back(Vec(row));
     }
 
     return rows;
@@ -106,7 +117,7 @@ std::vector<Vec> Matrix::getCols() const {
             col.push_back(data_[linearIndex(i, j)]);
         }
 
-        cols.emplace_back(col);
+        cols.emplace_back(Vec(col));
     }
 
     return cols;
@@ -325,6 +336,95 @@ Matrix Matrix::getCofactorMatrix() const {
     }
 
     return cofactor;
+}
+
+LUResult Matrix::LUDecomp() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to LU decompose");
+    }
+
+    u32 n = rows_;
+    Matrix A = *this;
+    Matrix L = identity(n);
+    Matrix U(n, n, 0.0);
+    std::vector<u32> perm(n);
+    std::iota(perm.begin(), perm.end(), 0);
+    u32 numSwaps = 0;
+
+    for (u32 i = 0; i < n; ++i) {
+        u32 pivotRow = i;
+        d64 pivotVal = std::abs(A(i, i));
+        for (u32 k = i + 1; k < n; ++k) {
+            d64 v = std::abs(A(k, i));
+            if (v > pivotVal) {
+                pivotVal = v;
+                pivotRow = k;
+            }
+        }
+
+        if (pivotVal < kDefaultAbsTol) {
+            throw std::runtime_error("cannot decompose singular matrix");
+        }
+
+        if (pivotRow != i) {
+            A.swapRows(i, pivotRow);
+            for (u32 col = 0; col < i; ++col) {
+                std::swap(L(i, col), L(pivotRow, col));
+            }
+            std::swap(perm[i], perm[pivotRow]);
+            ++numSwaps;
+        }
+
+        for (u32 j = i; j < n; ++j) {
+            d64 sum = A(i, j);
+            for (u32 k = 0; k < i; ++k) {
+                sum -= L(i, k) * U(k, j);
+            }
+            U(i, j) = sum;
+        }
+
+        for (u32 j = i + 1; j < n; ++j) {
+            d64 sum = A(j, i);
+            for (u32 k = 0; k < i; ++k) {
+                sum -= L(j, k) * U(k, i);
+            }
+            L(j, i) = sum / U(i, i);
+        }
+    }
+
+    // build P such that P * A_original = L * U
+    Matrix P(n, n, 0.0);
+    for (u32 i = 0; i < n; ++i) {
+        P(i, perm[i]) = 1.0;
+    }
+
+    return {std::move(P), std::move(L), std::move(U), numSwaps};
+}
+
+d64 Matrix::trace() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to have a trace");
+    }
+
+    d64 tr = 0.0;
+    for (u32 i = 0; i < rows_; ++i) {
+        tr += data_[linearIndex(i, i)];
+    }
+
+    return tr;
+}
+
+d64 Matrix::diagProduct() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to have a main diagonal");
+    }
+
+    d64 prod = 1.0;
+    for (u32 i = 0; i < rows_; ++i) {
+        prod *= data_[linearIndex(i, i)];
+    }
+
+    return prod;
 }
 
 Matrix Matrix::cofactorInversion() const {

@@ -17,6 +17,9 @@ using u32 = std::size_t;
 
 namespace linalg {
 
+class Matrix;
+struct LUResult;
+
 class Matrix {
 public:
     static constexpr d64 kSingularPivotTol = 100.0; // multiplier on machine epsilon 
@@ -34,6 +37,7 @@ public:
 
     double& operator()(u32 r, u32 c);
     double operator()(u32 r, u32 c) const;
+    Vec operator()(u32 i) const; // Return ith row as a vector
 
     u32 rows() const;
     u32 cols() const;
@@ -74,6 +78,14 @@ public:
     Matrix getMinor(u32 i, u32 j) const;
 
     Matrix getCofactorMatrix() const;
+
+    // perform LU decomposition of the matrix with doolittle choice 
+    LUResult LUDecomp() const;
+
+    d64 trace() const;
+    // product of diagonal elements
+    d64 diagProduct() const;
+
     Matrix inverse() const;
     Matrix cofactorInversion() const;
 
@@ -99,5 +111,10 @@ private:
 };
 
 std::ostream& operator<<(std::ostream&, const Matrix&);
+
+struct LUResult {
+    Matrix P, L, U;
+    u32 numSwaps;
+};
 
 } // namespace linalg
