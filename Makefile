@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
 
 # Source and object files
-SRC = src/main.cpp src/matrix.cpp src/vec.cpp src/linalg_interop.cpp
+SRC = src/main.cpp src/matrix.cpp src/vec.cpp src/linalg_interop.cpp src/linalg_solve.cpp
 OBJ = $(SRC:src/%.cpp=build/%.o)
 
 # Executable name

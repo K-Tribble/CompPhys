@@ -6,6 +6,7 @@
 #include "vec.hpp"
 #include "linalg_common.hpp"
 #include "linalg_interop.hpp"
+#include "linalg_solve.hpp"
 
 using namespace linalg;
 
@@ -123,6 +124,17 @@ int main() {
     std::cout << "Determinant from e = " << e.determinant() << "\n" 
         << "Determinant from U = " << U.diagProduct() * pow(-1, num_swaps) << std::endl;
     std::cout << "e:\n" << e << "LU product:\n" << LU;
+    std::cout << "Pivot Matrix:\n" << P;
+    std::cout << "P * e:\n" << P * e;
     bool luWorks = LU.isApprox(P * e);
-    std::cout << "LU decomposition works: " << luWorks;
+    std::cout << "LU decomposition works: " << luWorks << std::endl;
+
+    std::cout << "e should equal P^-1LU=P^TLU\n" << P.transpose() * L * U;
+
+    Matrix A = {{3.0,  2.0, -1.0}, {2.0, -2.0,  4.0}, {-1.0, 0.5, -1.0}};
+    Vec rhs = {1.0, -2.0, 0.0};
+    Vec x_exact = {1.0, -2.0, -2.0};
+    Vec x_numerical = solve::linSolve(A, rhs);
+    std::cout << x_exact << x_numerical << std::endl;
+    std::cout << "Linear solving works: " << x_exact.isApprox(x_numerical) << std::endl;
 }
