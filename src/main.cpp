@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <utility>
+#include <random>
 #include "matrix.hpp"
 #include "vec.hpp"
 #include "linalg_common.hpp"
@@ -23,6 +24,35 @@ auto timeFunction(Func&& func, Args&&... args) {
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         return std::pair{duration, result};
     }
+}
+
+void compareInversion(const Matrix& matrix) {
+    auto [gjDuration, gjInv] = timeFunction([&](){ return matrix.inverse(); });
+
+    auto [cofactorDuration, cofactorInv] = timeFunction([&](){ return matrix.cofactorInversion(); });
+
+    Matrix I = Matrix::identity(matrix.rows());
+
+    std::cout << "det(matrix) = " << matrix.determinant() << std::endl;
+    std::cout << "matrix shape = (" << matrix.shape()[0] << ", " << matrix.shape()[1] << ")" << std::endl;
+
+    if (I.isApprox(matrix * gjInv)) {
+        std::cout << "Gauss Jordan Inversion works" << std::endl;
+    } else {
+        std::cout << "Gauss Jordan Inversion doesn't work" << std::endl << matrix * gjInv;
+    }
+
+    if (I.isApprox(matrix * cofactorInv)) {
+        std::cout << "Cofactor Inversion works" << std::endl;
+    } else {
+        std::cout << "Cofactor Inversion doesn't work" << std::endl << matrix * cofactorInv;
+    }
+
+    std::cout << "Inverses approximately equal: " << gjInv.isApprox(cofactorInv) << std::endl;
+
+    std::cout << "inverse() took " << gjDuration.count() << " microseconds\n";
+
+    std::cout << "cofactorInversion() took " << cofactorDuration.count() << " microseconds\n\n";
 }
 
 int main() {
@@ -66,26 +96,33 @@ int main() {
 
     Matrix b = {{1, -2, 8, 7, 3}, {-5, 7.4, -8, 9, 2}, {-1, -2.3, 4, 2, 1}, {-4, -7, -6, 4, 1}, {9, -7.4, 2, -4.2, 5}};
 
-    auto [gjDuration, bGJInv] = timeFunction([&](){return b.inverse();});
-    auto [cofactorDuration, bCInv] = timeFunction([&](){return b.cofactorInversion();});
+    compareInversion(b);
 
-    Matrix I5 = Matrix::identity(5);
-    std::cout << "det(b) = " << b.determinant() << std::endl;
-    if (I5.isApprox(b * bGJInv)) {
-        std::cout << "Gauss Jordan Inversion works" << std::endl;
-    } else {
-        std::cout << "Gauss Jordan Inversion doesn't work" << std::endl << b * bGJInv;
-    }
-    if (I5.isApprox(b * bCInv)) {
-        std::cout << "Cofactor Inversion works" << std::endl;
-    } else {
-        std::cout << "Cofactor Inversion doesn't work" << std::endl << b * bCInv;
-    }
-    std::cout << bGJInv.isApprox(bCInv) << std::endl;
+    Matrix c = {
+        {1, -2, 8, 7, 3, -4, 6.2, 9},
+        {-5, 7.4, -8, 9, 2, 3, -1.5, 6},
+        {-1, -2.3, 4, 2, 1, 8, -7, 5.4},
+        {-4, -7, -6, 4, 1, -3.2, 9, 2},
+        {9, -7.4, 2, -4.2, 5, 6, -8.1, 3},
+        {2.5, 6, -3, 8.7, -1, 4, 7, -5},
+        {-8, 1.2, 5, -6, 3.4, -9, 2, 7},
+        {4, -5.6, 9, 1, -7, 2.8, -3, 6}
+    };  
 
-    std::cout << "inverse() took " << gjDuration.count() << " microseconds\n";
-    std::cout << "cofactorInversion() took " << cofactorDuration.count() << " microseconds\n";
+    compareInversion(c);
 
+    Matrix e{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};
 
-    return 0;
+    LUResult res = e.LUDecomp();
+    Matrix L = res.L;
+    Matrix U = res.U;
+    Matrix P = res.P;
+    u32 num_swaps = res.numSwaps;
+    Matrix LU = L * U;
+
+    std::cout << "Determinant from e = " << e.determinant() << "\n" 
+        << "Determinant from U = " << U.diagProduct() * pow(-1, num_swaps) << std::endl;
+    std::cout << "e:\n" << e << "LU product:\n" << LU;
+    bool luWorks = LU.isApprox(P * e);
+    std::cout << "LU decomposition works: " << luWorks;
 }
