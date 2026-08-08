@@ -4,10 +4,20 @@
 
 namespace linalg {
 
-    namespace solve {
+namespace solve {
 
-        Vec linSolve(Matrix A, Vec b);
+    // Solves Ax=b for when A is lower triangular by forward substitution
+    Vec forwardSub(const Matrix& lt, const Vec& rhs);
+    // Solves Ax=b for when A is uperr triangular by backward substitution
+    Vec backSub(const Matrix& up, const Vec& rhs);
 
-    } // namespace solve
+    Vec lu(const LUResult& f, const Vec& b);
+    std::vector<Vec> lu(const LUResult& f, const std::vector<Vec>& bs);
+
+    Vec lu(const Matrix& A, const Vec& b);
+
+    std::vector<Vec> lu(const Matrix& A, const std::vector<Vec>& bs);
+
+} // namespace solve
     
 } // namespace linalg
