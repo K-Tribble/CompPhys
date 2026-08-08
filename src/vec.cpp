@@ -5,7 +5,7 @@
 namespace linalg {
 
 Vec Vec::basis(u32 n, u32 i) {
-    if (i > n - 1) {
+    if (i >= n) {
         throw std::invalid_argument("Index of out range");
     }
     Vec v(n, 0.0);
@@ -73,8 +73,6 @@ Vec Vec::hadamard(const Vec& other) const {
         throw std::invalid_argument("shape mismatch");
     }
 
-    Vec result(*this);
-
     return Vec(detail::elementWise(data_, other.data_, std::multiplies<d64>()));
 }
 
@@ -83,7 +81,7 @@ Vec& Vec::hadamardInPlace(const Vec& other) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    detail::elementWise(data_, other.data_, std::multiplies<d64>());
+    detail::elementWiseInPlace(data_, other.data_, std::multiplies<d64>());
 
     return *this;
 }
@@ -142,7 +140,7 @@ Vec Vec::cross(const Vec& other) const {
 std::ostream& operator<<(std::ostream& os, const Vec& v) {
     for (u32 i = 0; i < v.size(); ++i) {
         if (i == 0) {
-            std::cout << "(" << v(i) << ", ";
+            os << "(" << v(i) << ", ";
         } else if (i == v.size() - 1) {
             os << v(i) << ")" << std::endl;
         } else {

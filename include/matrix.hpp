@@ -11,9 +11,6 @@
 #include "linalg_common.hpp"
 #include "vec.hpp"
 
-using d64 = double;
-using u32 = std::size_t;
-
 
 namespace linalg {
 

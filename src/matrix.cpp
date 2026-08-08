@@ -73,7 +73,7 @@ Vec Matrix::operator()(u32 i) const {
     buff.reserve(cols_);
 
     for (u32 j = 0; j < cols_; ++j) {
-        buff.emplace_back(linearIndex(i, j));
+        buff.emplace_back(data_[linearIndex(i, j)]);
     }
 
     return Vec(buff);
@@ -525,7 +525,6 @@ Matrix Matrix::hadamard(const Matrix& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
-    Matrix result(*this);
 
     return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::multiplies<d64>()));
 }

@@ -9,7 +9,7 @@ Vec operator*(const Matrix& m, const Vec& v) {
         throw std::invalid_argument("shape mismatch");
     }
     
-    Vec product(v.size());
+    Vec product(m.rows());
 
     std::vector<Vec> rows = m.getRows();
 

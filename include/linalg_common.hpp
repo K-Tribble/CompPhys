@@ -18,7 +18,7 @@ namespace linalg {
         inline std::vector<d64> elementWise(const std::vector<d64>& a, const std::vector<d64>& b, const std::function<d64(d64, d64)>& f) {
             if (a.size() != b.size()) throw std::invalid_argument("shape mismatch");
             std::vector<d64> result(a.size());
-            for (u32 i = 0; i < a.size(); ++i) result[i] = f(a[1], b[i]);
+            for (u32 i = 0; i < a.size(); ++i) result[i] = f(a[i], b[i]);
             return result;
         }
 

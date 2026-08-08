@@ -48,7 +48,7 @@ namespace solve {
 
         for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
             d64 sum = rhs(i);
-            for (int j = i + 1; j < n; ++j) {
+            for (int j = i + 1; j < static_cast<int>(n); ++j) {
                 sum -= ut(i, j) * x(j);
             }
             x(i) = sum / ut(i, i);

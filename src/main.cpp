@@ -95,11 +95,11 @@ int main() {
         std::cout << "Matrix vector multiplication doesn't work"  << std::endl;
     }
 
-    Matrix b = {{1, -2, 8, 7, 3}, {-5, 7.4, -8, 9, 2}, {-1, -2.3, 4, 2, 1}, {-4, -7, -6, 4, 1}, {9, -7.4, 2, -4.2, 5}};
+    Matrix b{{1, -2, 8, 7, 3}, {-5, 7.4, -8, 9, 2}, {-1, -2.3, 4, 2, 1}, {-4, -7, -6, 4, 1}, {9, -7.4, 2, -4.2, 5}};
 
     compareInversion(b);
 
-    Matrix c = {
+    Matrix c{
         {1, -2, 8, 7, 3, -4, 6.2, 9},
         {-5, 7.4, -8, 9, 2, 3, -1.5, 6},
         {-1, -2.3, 4, 2, 1, 8, -7, 5.4},
@@ -134,7 +134,15 @@ int main() {
     Matrix A = {{3.0,  2.0, -1.0}, {2.0, -2.0,  4.0}, {-1.0, 0.5, -1.0}};
     Vec rhs = {1.0, -2.0, 0.0};
     Vec x_exact = {1.0, -2.0, -2.0};
-    Vec x_numerical = solve::linSolve(A, rhs);
+    Vec x_numerical = solve::lu(A, rhs);
     std::cout << x_exact << x_numerical << std::endl;
     std::cout << "Linear solving works: " << x_exact.isApprox(x_numerical) << std::endl;
+
+    // Another test using the 8x8 c matrix from earlier
+    Vec rhs_1{-2.2, 19.8, -41.8, 24.8, -65.8, 92.6, -57.4, -26.4};
+    Vec x_exact2{1, 2, -1, 3, -2, 1, 4, -3};
+    auto [solveDuration, x_numerical2] = timeFunction([&](){ return solve::lu(c, rhs_1); });
+    std::cout << x_exact2 << x_numerical2 << std::endl;
+    std::cout << "Linear solving works: " << x_exact2.isApprox(x_numerical2) << std::endl;
+    std::cout << "Solver took: " << solveDuration.count() << "microseconds" << std::endl;
 }
