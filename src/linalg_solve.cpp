@@ -7,7 +7,7 @@ namespace linalg {
 
 namespace solve {
 
-    Vec forwrardSub(const Matrix& lt, const Vec& rhs) {
+    Vec forwardSub(const Matrix& lt, const Vec& rhs) {
         // undefined behavior for a non lower triangular matrix
 
         u32 n = rhs.size();
@@ -70,7 +70,7 @@ namespace solve {
 
         Vec b_prime = P * b;
 
-        Vec y = forwrardSub(L, b_prime);
+        Vec y = forwardSub(L, b_prime);
 
         Vec x = backSub(U, y);
 
