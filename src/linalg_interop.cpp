@@ -25,7 +25,7 @@ Vec operator*(const Vec& v, const Matrix& m) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    Vec product(v.size());
+    Vec product(m.cols());
 
     std::vector<Vec> cols = m.getCols();
 
