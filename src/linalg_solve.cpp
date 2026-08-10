@@ -1,6 +1,7 @@
 #include "matrix.hpp"
 #include "vec.hpp"
 #include "linalg_interop.hpp"
+#include "linalg_solve.hpp"
 #include <stdexcept>
 
 namespace linalg {
@@ -96,6 +97,97 @@ namespace solve {
     std::vector<Vec> lu(const Matrix& A, const std::vector<Vec>& bs) {
         LUResult res = A.LUDecomp();
         return lu(res, bs);
+    }
+
+    IterResult runSplitIteration(const Matrix& A, const Vec& b, const Matrix& B, const Matrix& S,
+            const solveFn& solve, IterStoppingCondition sc, const u32 maxIter) {
+        Vec xi = solve(B, b);
+
+        d64 l = sc.lnorm_ord;
+        IterResult result;
+        result.lnorm_ord = l;
+        result.errType = sc.errType;
+
+        d64 bNorm = b.lnorm(l);
+
+        bool iterate = true;
+        bool converged = false;
+        u32 numIter = 0;
+        Vec lastResidual;
+
+        while (iterate) {
+            Vec rhs = b - S * xi;
+            Vec x_ip1 = solve(B, rhs);
+
+            d64 err;
+            if (sc.errType == errorType::Fractional) {
+                Vec diff = x_ip1 - xi;
+                d64 denom = xi.lnorm(l);
+                err = (denom > kDefaultAbsTol) ? diff.lnorm(l) / denom : diff.lnorm(l);
+            } else {
+                lastResidual = A * x_ip1 - b;
+                err = (bNorm > kDefaultAbsTol) ? lastResidual.lnorm(l) / bNorm : lastResidual.lnorm(l);
+            }
+            xi = std::move(x_ip1);
+            ++numIter;
+
+            if (err < sc.stopCondition) { converged = true; iterate = false; }
+            else if (numIter >= maxIter) { iterate = false; }
+        }
+
+        result.success = converged;
+        result.numIter = numIter;
+        result.x_final = xi;
+        result.finalResidualVector = (sc.errType == errorType::Residual) ? lastResidual : A * xi - b;
+        result.finalFractionalResErr = (bNorm > kDefaultAbsTol)
+            ? result.finalResidualVector.lnorm(l) / bNorm
+            : result.finalResidualVector.lnorm(l);
+
+        return result;
+    }
+
+    IterResult jacobi(const Matrix& A, const Vec& b, IterStoppingCondition sc, const u32 maxIter) {
+        std::vector<d64> ADiag = A.getDiag();
+        for (d64 x : ADiag) {
+            if (std::fabs(x) < kDefaultAbsTol) {
+                throw std::invalid_argument("cannot do jacob iteration with matrix that has a zero diagonal element");
+            }
+        }
+        Matrix B = Matrix::diagonal(ADiag);
+        Matrix S = A - B;
+
+        solveFn diagSolve = [](const Matrix& B, const Vec& rhs) {
+            Vec y(rhs.size());
+            for (u32 i = 0; i < rhs.size(); ++i) {
+                y(i) = rhs(i) / B(i, i);
+                return y;
+            }
+        };
+
+        return runSplitIteration(A, b, B, S, diagSolve, sc, maxIter);
+    }
+
+    IterResult sor(const Matrix& A, const Vec& b, const d64 w, IterStoppingCondition sc,
+        const u32 maxIter, SplitType split = SplitType::Lower) {
+        if (w <= 0 || w >= 2) {
+            throw std::invalid_argument("sor requires a relaxation parameter in (0, 2)");
+        }
+        d64 alpha = 1.0 / w;
+        Matrix D = Matrix::diagonal(A.getDiag());
+        Matrix B = (split == SplitType::Lower) ? A.getLower() + D * alpha : A.getUpper() + D * alpha;
+
+        Matrix S = A - B;
+
+        solveFn triSolve = (split == SplitType::Lower) 
+            ? solveFn([](const Matrix& B, const Vec& rhs) {return forwardSub(B, rhs);})
+            : solveFn([](const Matrix& B, const Vec& rhs) {return backSub(B, rhs);});
+
+        return runSplitIteration(A, b, B, S, triSolve, sc, maxIter);
+    }
+
+    IterResult gaussSeidel(const Matrix& A, const Vec& b, IterStoppingCondition sc, 
+        const u32 maxIter, SplitType split = SplitType::Lower) {
+        return sor(A, b, 1.0, sc, maxIter, split);
     }
 
 } // namespace solve
