@@ -12,6 +12,7 @@ public:
     explicit Vec(u32 n, d64 init = 0.0) : data_(n, init) {}
     explicit Vec(std::vector<d64> vals) : data_(std::move(vals)) {}
     Vec(std::initializer_list<d64> init) : data_(init) {}
+    Vec() = default;
 
     static Vec zeros(u32 n) {return Vec(n, 0.0);}
     static Vec ones(u32 n) {return Vec(n, 1.0);}
@@ -40,6 +41,7 @@ public:
     d64 dot(const Vec& other) const;
     d64 normSquared() const;
     d64 norm() const;
+    d64 lnorm(d64 l) const;
     Vec normalized() const;
     Vec& normalize();
 

@@ -114,6 +114,25 @@ d64 Vec::norm() const {
     return std::sqrt(normSquared()); 
 }
 
+d64 Vec::lnorm(d64 l) const {
+    if (std::isinf(l)) {
+        d64 max = 0;
+        for (d64 x : data_) {
+            if (std::fabs(x) > max) {
+                max = std::fabs(x);
+            }
+        }
+        return max;
+    }
+
+    d64 sum = 0.0;
+    for (d64 x : data_) {
+        sum += std::pow(std::abs(x), l);
+    }
+
+    return std::pow(sum, 1.0 / l);
+}
+
 Vec Vec::normalized() const {
     d64 n = norm();
     if (n <= kDefaultAbsTol) throw std::invalid_argument("cannot normalize zero vector");
