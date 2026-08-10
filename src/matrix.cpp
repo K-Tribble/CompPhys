@@ -427,6 +427,50 @@ d64 Matrix::diagProduct() const {
     return prod;
 }
 
+std::vector<d64> Matrix::getDiag() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("no diagonal for non-square matrix");
+    }
+
+    std::vector<d64> diag;
+    diag.reserve(rows_);
+
+    for (u32 i = 0; i < rows_; ++i) {
+        diag.emplace_back(data_[linearIndex(i, i)]);
+    }
+
+    return diag;
+}
+
+Matrix Matrix::getLower() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("needs to be square matrix to have defined main diagonal");
+    }
+    Matrix lower(rows_, cols_, 0.0);
+
+    for (u32 i = 0; i < rows_; ++i) { 
+        for (u32 j = 0; j < i; ++j) {
+            lower(i, j) = data_[linearIndex(i, j)];
+        }
+    }
+
+    return lower;
+}
+
+Matrix Matrix::getUpper() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("needs to be square matrix to have defined main diagonal");
+    }
+    Matrix upper(rows_, cols_, 0.0);
+    for (u32 i = 0; i < rows_; ++i) {
+        for (u32 j = i + 1; j < cols_; ++j) {
+            upper(i, j) = data_[linearIndex(i, j)];
+        }
+    }
+
+    return upper;
+}
+
 Matrix Matrix::cofactorInversion() const {
     d64 det = (*this).determinant();
     if (rows_ != cols_) {

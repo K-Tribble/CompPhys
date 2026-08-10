@@ -145,4 +145,13 @@ int main() {
     std::cout << x_exact2 << x_numerical2 << std::endl;
     std::cout << "Linear solving works: " << x_exact2.isApprox(x_numerical2) << std::endl;
     std::cout << "Solver took: " << solveDuration.count() << "microseconds" << std::endl;
+
+    Matrix cl = c.getLower();
+    Matrix cu = c.getUpper();
+    Matrix cd = Matrix::diagonal(c.getDiag());
+    Matrix shouldBe_c = cl + cu + cd;
+
+    std::cout << "c:\n" << c << "c lower:\n" << cl << "c upper:\n" 
+        << cu << "c diagonal:\n" << cd;
+    std::cout << "Diagonal, and lower/upper split works: " << c.isApprox(shouldBe_c);
 }

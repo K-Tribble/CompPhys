@@ -27,6 +27,8 @@ public:
 
     Matrix(std::initializer_list<std::initializer_list<d64>> init);
 
+    Matrix() = default;
+
     static Matrix zeros(u32 rows, u32 cols);
     static Matrix ones(u32 rows, u32 cols);
     static Matrix identity(u32 n);
@@ -82,6 +84,12 @@ public:
     d64 trace() const;
     // product of diagonal elements
     d64 diagProduct() const;
+    // Get diagonal elements
+    std::vector<d64> getDiag() const;
+    // Get a Matrix with all elements below main diagonal
+    Matrix getLower() const;
+    // Get a Matrix with all elements above main diagonal
+    Matrix getUpper() const;
 
     Matrix inverse() const;
     Matrix cofactorInversion() const;
