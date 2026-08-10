@@ -160,17 +160,17 @@ namespace solve {
             Vec y(rhs.size());
             for (u32 i = 0; i < rhs.size(); ++i) {
                 y(i) = rhs(i) / B(i, i);
-                return y;
             }
+            return y;
         };
 
         return runSplitIteration(A, b, B, S, diagSolve, sc, maxIter);
     }
 
     IterResult sor(const Matrix& A, const Vec& b, const d64 w, IterStoppingCondition sc,
-        const u32 maxIter, SplitType split = SplitType::Lower) {
-        if (w <= 0 || w >= 2) {
-            throw std::invalid_argument("sor requires a relaxation parameter in (0, 2)");
+        const u32 maxIter, SplitType split) {
+        if (w <= 0 || w > 2) {
+            throw std::invalid_argument("sor requires a relaxation parameter in (0, 2]");
         }
         d64 alpha = 1.0 / w;
         Matrix D = Matrix::diagonal(A.getDiag());
@@ -186,7 +186,7 @@ namespace solve {
     }
 
     IterResult gaussSeidel(const Matrix& A, const Vec& b, IterStoppingCondition sc, 
-        const u32 maxIter, SplitType split = SplitType::Lower) {
+        const u32 maxIter, SplitType split) {
         return sor(A, b, 1.0, sc, maxIter, split);
     }
 
