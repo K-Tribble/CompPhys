@@ -7,6 +7,8 @@
 
 namespace linalg {
 
+class Matrix;
+
 class Vec {
 public:
     explicit Vec(u32 n, d64 init = 0.0) : data_(n, init) {}
@@ -40,6 +42,7 @@ public:
     Vec& hadamardInPlace(const Vec& other);
 
     d64 dot(const Vec& other) const;
+    Matrix outer(Vec& v) const; 
     d64 normSquared() const;
     d64 norm() const;
     d64 lnorm(d64 l) const;

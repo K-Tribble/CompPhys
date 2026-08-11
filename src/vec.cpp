@@ -1,5 +1,6 @@
 #include "vec.hpp"
 #include "linalg_common.hpp"
+#include "matrix.hpp"
 #include <iostream>
 #include <random>
 
@@ -120,6 +121,20 @@ d64 Vec::dot(const Vec& other) const {
         s += data_[i] * other.data_[i];
     }
     return s;
+}
+
+Matrix Vec::outer(Vec& v) const {
+    u32 n = size();
+    u32 m = v.size();
+    Matrix result(n, m);
+
+    for (u32 i = 0; i < n; ++i) {
+        for (u32 j = 0; j < m; ++j) {
+            result(i, j) = data_[i] * v.data_[j];
+        }
+    }
+
+    return result;
 }
 
 d64 Vec::normSquared() const {
