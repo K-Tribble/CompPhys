@@ -1,7 +1,8 @@
 #include "matrix.hpp"
 #include "linalg_common.hpp"
-#include <linalg_interop.hpp>
+#include "linalg_interop.hpp"
 #include "linalg_solve.hpp"
+#include "vec.hpp"
 #include <stdexcept>
 #include <cmath>
 #include <utility>
@@ -75,6 +76,17 @@ Vec Matrix::operator()(u32 i) const {
     buff.reserve(cols_);
 
     for (u32 j = 0; j < cols_; ++j) {
+        buff.emplace_back(data_[linearIndex(i, j)]);
+    }
+
+    return Vec(buff);
+}
+
+Vec Matrix::getCol(u32 j) const {
+    std::vector<d64> buff;
+    buff.reserve(rows_);
+
+    for (u32 i = 0; i < rows_; ++ i) {
         buff.emplace_back(data_[linearIndex(i, j)]);
     }
 
@@ -401,6 +413,44 @@ LUResult Matrix::LUDecomp() const {
     }
 
     return {std::move(P), std::move(L), std::move(U), numSwaps};
+}
+
+QRResult Matrix::QRDecomp() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square for this QR decomposition to work");
+    }
+
+    Matrix R(*this);
+    Matrix Q = identity(rows_);
+
+    auto padMatrix = [&](Matrix& Q, u32 n) {
+        Matrix res = identity(n);
+        u32 m = Q.rows_;
+
+        for (u32 i = n - m; i < n; ++i) {
+            for (u32 j = n - m; j < n; ++j) {
+                res(i, j) = Q(i - n + m, j - n + m);
+            }
+        }
+
+        return res;
+    };
+
+    for (u32 i = 0; i < rows_ - 1; ++i) {
+        Vec Ri_col = R.sliceByRows(i, rows_).getCol(i);
+        d64 sign = (Ri_col(0) >= 0.0) ? 1.0 : -1.0;
+        d64 alpha = sign * Ri_col.norm();
+        Vec a(rows_ - i);
+        a(0) = alpha;
+        Vec v = Ri_col - a;
+        v.normalize();
+        Matrix Qn_prepad = identity(rows_ - i) - (v.outer(v) * 2);
+        Matrix Qn = padMatrix(Qn_prepad, rows_);
+        R = Qn * R;
+        Q = Q * Qn.transpose();
+    }
+
+    return {std::move(Q), std::move(R)};
 }
 
 d64 Matrix::trace() const {

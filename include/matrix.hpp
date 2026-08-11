@@ -9,13 +9,15 @@
 #include <stdexcept>
 #include <iostream>
 #include "linalg_common.hpp"
-#include "vec.hpp"
 
 
 namespace linalg {
 
+class Vec;
+
 class Matrix;
 struct LUResult;
+struct QRResult;
 
 class Matrix {
 public:
@@ -36,7 +38,10 @@ public:
 
     double& operator()(u32 r, u32 c);
     double operator()(u32 r, u32 c) const;
-    Vec operator()(u32 i) const; // Return ith row as a vector
+    // Return ith row as a vector
+    Vec operator()(u32 i) const; 
+    // Return jth col as a vector
+    Vec getCol(u32 j) const;
 
     u32 rows() const;
     u32 cols() const;
@@ -80,6 +85,8 @@ public:
 
     // perform LU decomposition of the matrix with doolittle choice 
     LUResult LUDecomp() const;
+    // perform QR decomposition of the matrix with hosueholder reflections
+    QRResult QRDecomp() const;
 
     d64 trace() const;
     // product of diagonal elements
@@ -127,6 +134,10 @@ std::ostream& operator<<(std::ostream&, const Matrix&);
 struct LUResult {
     Matrix P, L, U;
     u32 numSwaps;
+};
+
+struct QRResult {
+    Matrix Q, R;
 };
 
 } // namespace linalg
