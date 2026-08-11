@@ -273,4 +273,28 @@ int main() {
     std::cout << "Largest pair. Eigenvalue: " << lEV << "\n" << lEVec;
     std::cout << "Smallest pair. Eigenvalue: " << sEV << "\n" << sEVec;
 
+    Matrix A_qr{
+    { 4,  3, -2,  1},
+    { 2,  1,  3, -1},
+    {-2,  4,  1,  2},
+    { 1, -2,  2,  5}
+    };
+
+    QRResult qrRes = A_qr.QRDecomp();
+    Matrix Q = qrRes.Q;
+    Matrix R = qrRes.R;
+
+    std::cout << "Testing QR decomp for 4x4 matrix:\n";
+    std::cout << "Q*R matches A_qr: " << A_qr.isApprox(Q * R) << std::endl;
+    std::cout << "My Q is orthogonal: " << (Q.transpose() * Q).isApprox(Matrix::identity(4)) << std::endl;
+    std::cout << "\n\n\n\n";
+
+    // QR decompose the 50x50 matrix from earlier
+    QRResult A_iter_qr = A_iter.QRDecomp();
+    Matrix Q_iter = A_iter_qr.Q;
+    Matrix R_iter = A_iter_qr.R;
+
+    std::cout << "Testing QR decomp for 50x50 matrix:\n";
+    std::cout << "Q*R matches A_qr: " << A_iter.isApprox(Q_iter * R_iter) << std::endl;
+    std::cout << "My Q is orthogonal: " << (Q_iter.transpose() * Q_iter).isApprox(Matrix::identity(50)) << std::endl;
 }
