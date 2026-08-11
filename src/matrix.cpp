@@ -63,11 +63,11 @@ u32 Matrix::linearIndex(u32 r, u32 c) const {
     return r * cols_ + c;
 }
 
-double& Matrix::operator()(u32 r, u32 c) {
+d64& Matrix::operator()(u32 r, u32 c) {
     return data_[linearIndex(r, c)];
 }
 
-double Matrix::operator()(u32 r, u32 c) const {
+d64 Matrix::operator()(u32 r, u32 c) const {
     return data_[linearIndex(r, c)];
 }
 

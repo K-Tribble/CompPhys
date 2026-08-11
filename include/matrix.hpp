@@ -36,8 +36,8 @@ public:
     static Matrix identity(u32 n);
     static Matrix diagonal(const std::vector<d64>& diag);
 
-    double& operator()(u32 r, u32 c);
-    double operator()(u32 r, u32 c) const;
+    d64& operator()(u32 r, u32 c);
+    d64 operator()(u32 r, u32 c) const;
     // Return ith row as a vector
     Vec operator()(u32 i) const; 
     // Return jth col as a vector
