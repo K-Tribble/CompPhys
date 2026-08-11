@@ -17,6 +17,7 @@ public:
     static Vec zeros(u32 n) {return Vec(n, 0.0);}
     static Vec ones(u32 n) {return Vec(n, 1.0);}
     static Vec basis(u32 n, u32 i); // e_i one-hot
+    static Vec random(u32 n);
     d64& operator()(u32 i) {return data_.at(i);}
     d64 operator()(u32 i) const {return data_.at(i);}
 

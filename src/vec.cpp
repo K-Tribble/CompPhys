@@ -1,6 +1,7 @@
 #include "vec.hpp"
 #include "linalg_common.hpp"
 #include <iostream>
+#include <random>
 
 namespace linalg {
 
@@ -12,6 +13,20 @@ Vec Vec::basis(u32 n, u32 i) {
     v(i) = 1;
 
     return v;
+}
+
+Vec Vec::random(u32 n) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<d64> dist(-1.0, 1.0);
+
+    std::vector<double> data(n);
+
+    for (double& x : data) {
+        x = dist(gen);
+    }
+
+    return Vec(data);
 }
 
 Vec Vec::operator+(const Vec& other) const {
