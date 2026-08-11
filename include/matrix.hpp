@@ -94,6 +94,13 @@ public:
     Matrix inverse() const;
     Matrix cofactorInversion() const;
 
+    // returns the eigenvalue with the largest modulus and its associated normalized eigenvector
+    std::pair<d64, Vec> largestEigenPair(u32 power = 50) const;
+    // returns the eigenvalue with the smalles modulus and its associated normalized eigenvector
+    std::pair<d64, Vec> smallestEigenPair(u32 power = 50) const;
+    // Returns the eigenvalue closest to a value alpha and its associated normalized eigenvector
+    std::pair<d64, Vec> eigenPairClosestTo(d64 alpha, u32 power = 50) const;
+
     d64 sumElements() const;
 
     Matrix sum(u32 axis = 0) const;

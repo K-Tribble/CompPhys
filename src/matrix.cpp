@@ -1,5 +1,7 @@
 #include "matrix.hpp"
 #include "linalg_common.hpp"
+#include <linalg_interop.hpp>
+#include "linalg_solve.hpp"
 #include <stdexcept>
 #include <cmath>
 #include <utility>
@@ -623,6 +625,65 @@ Matrix Matrix::sliceByCols(u32 start, u32 finish) const {
     }
 
     return result;
+}
+
+std::pair<d64, Vec> Matrix::largestEigenPair(u32 power) const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to have eigenvalues");
+    }
+
+    Vec v = Vec::random(rows_);
+
+    for (u32 i = 0; i < power; ++i) {
+        v = (*this) * v;
+        v.normalize();
+    }
+
+    v.normalize(); // normalized eigenvector
+    d64 eigenVal = v.dot(((*this) * v));
+
+    return {eigenVal, v};
+}
+
+std::pair<d64, Vec> Matrix::smallestEigenPair(u32 power) const {
+    if (rows_ != cols_){
+        throw std::invalid_argument("matrix must be square to have eigenvalues");
+    }
+
+    Vec v = Vec::random(rows_);
+
+    LUResult A_res = LUDecomp();
+
+    for (u32 i =0; i < power; ++i) {
+        v = solve::lu(A_res, v);
+        v.normalize();
+    }
+
+    v.normalize();
+    d64 eigenVal = 1.0 / v.dot(solve::lu(A_res, v));
+
+    return {eigenVal, v};
+}
+
+std::pair<d64, Vec> Matrix::eigenPairClosestTo(d64 alpha, u32 power) const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to have eigenvalues");
+    }
+
+    Matrix A_prime = (*this) - (identity(rows_) * alpha);
+    LUResult A_prime_res = A_prime.LUDecomp();
+
+    Vec v = Vec::random(rows_);
+    
+    for (u32 i = 0; i < power; ++i) {
+        v = solve::lu(A_prime_res, v);
+        v.normalize();
+    }
+
+    v.normalize();
+    d64 eigenVal = alpha + 1.0 / v.dot(solve::lu(A_prime_res, v));
+    
+    return {eigenVal, v};
 }
 
 d64 Matrix::sumElements() const {
