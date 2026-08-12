@@ -4,15 +4,11 @@
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
+#include "types.hpp"
+#include "constants.hpp"
 
 
 namespace linalg {
-
-    using d64 = double;
-    using u32 = std::size_t;
-
-    constexpr d64 kDefaultAbsTol = 1e-9;
-    constexpr d64 kDefaultRelTol = 1e-9;
 
     namespace detail {
         inline std::vector<d64> elementWise(const std::vector<d64>& a, const std::vector<d64>& b, const std::function<d64(d64, d64)>& f) {

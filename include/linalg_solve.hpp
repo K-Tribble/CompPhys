@@ -4,6 +4,8 @@
 #include "vec.hpp"
 #include "linalg_interop.hpp"
 #include <functional>
+#include "types.hpp"
+#include "constants.hpp"
 
 namespace linalg {
 
@@ -18,7 +20,7 @@ namespace solve {
     };  
 
     struct IterStoppingCondition {  
-        d64 stopCondition = 1e-14;  
+        d64 stopCondition = kIterStopCondition;  
         d64 lnorm_ord = 2;  
         errorType errType = errorType::Fractional;  
     };  

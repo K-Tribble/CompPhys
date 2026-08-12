@@ -28,7 +28,7 @@ build/%.o: src/%.cpp
 	@mkdir -p build
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean build files
+# Clean build filesl
 clean:
 	rm -rf build
 

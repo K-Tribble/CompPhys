@@ -2,6 +2,8 @@
 
 #include "matrix.hpp"
 #include "vec.hpp"
+#include "types.hpp"
+#include "constants.hpp"
 
 namespace linalg{
 

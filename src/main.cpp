@@ -7,6 +7,9 @@
 #include "linalg_common.hpp"
 #include "linalg_interop.hpp"
 #include "linalg_solve.hpp"
+#include "types.hpp"
+#include "constants.hpp"
+#include "nonlin_solve.hpp"
 
 using namespace linalg;
 
@@ -297,4 +300,26 @@ int main() {
     std::cout << "Testing QR decomp for 50x50 matrix:\n";
     std::cout << "Q*R matches A_qr: " << A_iter.isApprox(Q_iter * R_iter) << std::endl;
     std::cout << "My Q is orthogonal: " << (Q_iter.transpose() * Q_iter).isApprox(Matrix::identity(50)) << std::endl;
+
+    // Testing nonlinear solving methods trying to find the positive root of x^2-17 = 0
+    auto func = [](d64 x) {
+        return x * x - 17.0;
+    };
+
+    auto deriv_f = [](d64 x) {
+        return 2.0 * x;
+    };
+
+    // Testing bisection method
+    d64 xl = 4;
+    d64 xr = 20;
+
+    std::cout << "Actual root = " << std::sqrt(17) << std::endl;
+    nonlin::RootIterResult bisec_res = nonlin::bisection(func, xl, xr);
+    std::cout << bisec_res.converged << "\n" << bisec_res.foundRoot << "\n" << bisec_res.root << "\n" << bisec_res.function_val << "\n" << bisec_res.numIter << std::endl;
+    nonlin::RootIterResult newton_res = nonlin::newton(func, deriv_f, 24.0);
+    std::cout << newton_res.converged << "\n" << newton_res.foundRoot << "\n" << newton_res.root << "\n" << newton_res.function_val << "\n" << newton_res.numIter << std::endl;
+    nonlin::RootIterResult secant_res = nonlin::secant(func, 24.0, 18.0);
+    std::cout << secant_res.converged << "\n" << secant_res.foundRoot << "\n" << secant_res.root << "\n" << secant_res.function_val << "\n" << secant_res.numIter << std::endl;
+
 }

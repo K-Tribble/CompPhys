@@ -4,6 +4,9 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <random>
+#include "types.hpp"
+#include "constants.hpp"
 
 namespace linalg {
 

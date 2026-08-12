@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <iostream>
 #include "linalg_common.hpp"
+#include "types.hpp"
+#include "constants.hpp"
 
 
 namespace linalg {
@@ -66,9 +68,9 @@ public:
     Matrix& operator/=(d64 s);
 
     bool operator==(const Matrix& other) const;
-    bool isApprox(const Matrix& other, d64 absTol = linalg::kDefaultAbsTol, d64 relTol = linalg::kDefaultRelTol) const;
-    bool isZero(d64 absTol = linalg::kDefaultAbsTol) const;
-    bool isSymmetric(d64 absTol = linalg::kDefaultAbsTol, d64 relTol = linalg::kDefaultRelTol) const;
+    bool isApprox(const Matrix& other, d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
+    bool isZero(d64 absTol = kDefaultAbsTol) const;
+    bool isSymmetric(d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
 
     Matrix absDiff(const Matrix& other) const;
 
