@@ -17,17 +17,7 @@ Vec Vec::basis(u32 n, u32 i) {
 }
 
 Vec Vec::random(u32 n) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<d64> dist(-1.0, 1.0);
-
-    std::vector<double> data(n);
-
-    for (double& x : data) {
-        x = dist(gen);
-    }
-
-    return Vec(data);
+    return Vec::random(n, std::uniform_real_distribution<d64>(-1.0, 1.0));
 }
 
 Vec Vec::operator+(const Vec& other) const {

@@ -19,6 +19,21 @@ public:
     static Vec zeros(u32 n) {return Vec(n, 0.0);}
     static Vec ones(u32 n) {return Vec(n, 1.0);}
     static Vec basis(u32 n, u32 i); // e_i one-hot
+
+    // templated random vector instantation that accepts any distribution
+    template <typename Distribution>
+    static Vec random(u32 n, Distribution dist){
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+
+        std::vector<d64> data(n);
+        for (d64& x : data) {
+            x = dist(gen);
+        }
+
+        return Vec(data);
+    }
+    // default random method which uses a uniform real distribution from -1.0 to 1.0
     static Vec random(u32 n);
     d64& operator()(u32 i) {return data_.at(i);}
     d64 operator()(u32 i) const {return data_.at(i);}
