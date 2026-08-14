@@ -1,8 +1,8 @@
 #pragma once
 
-#include "matrix.hpp"
-#include "linalg_common.hpp"
-#include "vec.hpp"
+#include "linalg/matrix.hpp"
+#include "linalg/linalg_common.hpp"
+#include "linalg/vec.hpp"
 #include <functional>
 #include <vector>
 #include "types.hpp"

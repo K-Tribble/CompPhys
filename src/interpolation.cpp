@@ -1,5 +1,5 @@
 #include "interpolation.hpp"
-#include "linalg_solve.hpp"
+#include "linalg/linalg_solve.hpp"
 
 std::vector<d64> lerp(std::span<const d64> xInterp, std::span<const d64> xKnown, std::span<const d64> fKnown) {
     if (xKnown.size() != fKnown.size()) {

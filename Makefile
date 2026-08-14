@@ -6,11 +6,11 @@ CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
 
 # Source and object files
 SRC = src/main.cpp \
-	src/matrix.cpp \
-	src/vec.cpp \
-	src/linalg_interop.cpp \
-	src/linalg_solve.cpp \
-	src/interpolation.cpp \
+	src/linalg/matrix.cpp \
+	src/linalg/vec.cpp \
+	src/linalg/linalg_interop.cpp \
+	src/linalg/linalg_solve.cpp \
+	src/interpolation.cpp
 
 OBJ = $(SRC:src/%.cpp=build/%.o)
 
@@ -26,10 +26,10 @@ $(TARGET): $(OBJ)
 
 # Compile source files into build/
 build/%.o: src/%.cpp
-	@mkdir -p build
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean build filesl
+# Clean build files
 clean:
 	rm -rf build
 

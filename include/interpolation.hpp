@@ -1,7 +1,7 @@
 #pragma once
  
-#include "matrix.hpp"
-#include "vec.hpp"
+#include "linalg/matrix.hpp"
+#include "linalg/vec.hpp"
 #include "types.hpp"
 #include <span>
 #include <cmath>

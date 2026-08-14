@@ -2,11 +2,11 @@
 #include <chrono>
 #include <utility>
 #include <random>
-#include "matrix.hpp"
-#include "vec.hpp"
-#include "linalg_common.hpp"
-#include "linalg_interop.hpp"
-#include "linalg_solve.hpp"
+#include "linalg/matrix.hpp"
+#include "linalg/vec.hpp"
+#include "linalg/linalg_common.hpp"
+#include "linalg/linalg_interop.hpp"
+#include "linalg/linalg_solve.hpp"
 #include "types.hpp"
 #include "constants.hpp"
 #include "nonlin_solve.hpp"

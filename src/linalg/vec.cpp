@@ -1,6 +1,6 @@
-#include "vec.hpp"
-#include "linalg_common.hpp"
-#include "matrix.hpp"
+#include "linalg/vec.hpp"
+#include "linalg/linalg_common.hpp"
+#include "linalg/matrix.hpp"
 #include <iostream>
 #include <random>
 

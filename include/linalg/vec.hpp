@@ -1,5 +1,5 @@
 #pragma once
-#include "linalg_common.hpp"
+#include "linalg/linalg_common.hpp"
 #include <vector>
 #include <cmath>
 #include <stdexcept>

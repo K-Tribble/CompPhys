@@ -8,7 +8,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-#include "linalg_common.hpp"
+#include "linalg/linalg_common.hpp"
 #include "types.hpp"
 #include "constants.hpp"
 
