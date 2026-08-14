@@ -321,5 +321,4 @@ int main() {
     std::cout << newton_res.converged << "\n" << newton_res.foundRoot << "\n" << newton_res.root << "\n" << newton_res.function_val << "\n" << newton_res.numIter << std::endl;
     nonlin::RootIterResult secant_res = nonlin::secant(func, 24.0, 18.0);
     std::cout << secant_res.converged << "\n" << secant_res.foundRoot << "\n" << secant_res.root << "\n" << secant_res.function_val << "\n" << secant_res.numIter << std::endl;
-
 }

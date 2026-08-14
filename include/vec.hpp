@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <random>
+#include <span>
 #include "types.hpp"
 #include "constants.hpp"
 
@@ -22,6 +23,10 @@ public:
     static Vec zeros(u32 n) {return Vec(n, 0.0);}
     static Vec ones(u32 n) {return Vec(n, 1.0);}
     static Vec basis(u32 n, u32 i); // e_i one-hot
+
+    std::span<d64> span() {return data_;}
+
+    std::span<const d64> span() const {return data_;}
 
     // templated random vector instantation that accepts any distribution
     template <typename Distribution>
