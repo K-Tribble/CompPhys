@@ -10,6 +10,7 @@ SRC = src/main.cpp \
 	src/vec.cpp \
 	src/linalg_interop.cpp \
 	src/linalg_solve.cpp \
+	src/interpolation.cpp \
 
 OBJ = $(SRC:src/%.cpp=build/%.o)
 
