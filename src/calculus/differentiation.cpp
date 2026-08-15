@@ -5,7 +5,7 @@ namespace calculus {
 
 namespace differentiate {
     
-    std::vector<d64> differentiate(std::span<const d64> x, std::span<const d64> y, DiffScheme scheme = DiffScheme::Central) {
+    std::vector<d64> differentiate(std::span<const d64> x, std::span<const d64> y, DiffScheme scheme) {
         if (x.size() != y.size()) {
             throw std::invalid_argument("x and y must have the same size");
         }
@@ -21,10 +21,11 @@ namespace differentiate {
 
         switch (scheme) {
             case DiffScheme::Central:
-                if (n < 3) {
-                    throw std::invalid_argument("central difference requires at least 3 points");
-                }
                 {
+                    if (n < 3) {
+                        throw std::invalid_argument("central difference requires at least 3 points");
+                }
+                
                     const d64 h = std::fabs(x[1] - x[0]);
                     const d64 deriv0 = (y[1] - y[0]) / h;
                     firstDeriv.emplace_back(deriv0);
@@ -39,26 +40,28 @@ namespace differentiate {
                     const d64 derivFinal = (y[n - 1] - y[n - 2]) / h;
                     firstDeriv.emplace_back(derivFinal);
                 }
-                
                 break;
 
             case DiffScheme::Forward:
-                for (u32 i = 0; i < n - 1; ++i) {
-                    d64 h = x[i + 1] - x[i];
-                    d64 deriv = (y[i + 1] - y[i]) / h;
-                    firstDeriv.emplace_back(deriv);
+                {
+                    for (u32 i = 0; i < n - 1; ++i) {
+                        d64 h = x[i + 1] - x[i];
+                        d64 deriv = (y[i + 1] - y[i]) / h;
+                        firstDeriv.emplace_back(deriv);
+                    }
+                    d64 derivFinal = (y[n - 1] - y[n - 2]) / (x[n - 1] - x[n - 2]);
+                    firstDeriv.emplace_back(derivFinal);
                 }
-                const d64 derivFinal = (y[n - 1] - y[n - 2]) / (x[n - 1] - x[n - 2]);
-                firstDeriv.emplace_back(derivFinal);
                 break;
-            
             case DiffScheme::Backward:
-                const d64 deriv0 = (y[1] - y[0]) / (x[1] - x[0]);
-                firstDeriv.emplace_back(deriv0);
-                for (u32 i = 1; i < n; ++i) {
-                    d64 h = x[i] - x[i - 1];
-                    d64 deriv = (y[i] - y[i - 1]) / h;
-                    firstDeriv.emplace_back(deriv);
+                {
+                    const d64 deriv0 = (y[1] - y[0]) / (x[1] - x[0]);
+                    firstDeriv.emplace_back(deriv0);
+                    for (u32 i = 1; i < n; ++i) {
+                        d64 h = x[i] - x[i - 1];
+                        d64 deriv = (y[i] - y[i - 1]) / h;
+                        firstDeriv.emplace_back(deriv);
+                }
                 }
                 break;
         }
