@@ -21,7 +21,7 @@ namespace nonlin {
 
     // 1D root finders
     template <typename F>
-    RootIterResult bisection(F&& func, d64 xl, d64 xr, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
+    inline RootIterResult bisection(F&& func, d64 xl, d64 xr, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
         RootIterResult res;
 
         d64 fl = func(xl);
@@ -96,7 +96,7 @@ namespace nonlin {
     }
 
     template <typename F, typename F_prime>
-    RootIterResult newton(F&& func, F_prime&& deriv, d64 x0, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
+    inline RootIterResult newton(F&& func, F_prime&& deriv, d64 x0, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
         RootIterResult res;
 
         d64 xi = x0;
@@ -141,7 +141,7 @@ namespace nonlin {
     }
 
     template <typename F>
-    RootIterResult secant(F&& func, d64 x0, d64 x1, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
+    inline RootIterResult secant(F&& func, d64 x0, d64 x1, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
         RootIterResult res;
 
         d64 xim1 = x0;
