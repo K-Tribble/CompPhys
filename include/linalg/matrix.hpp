@@ -20,6 +20,7 @@ class Vec;
 class Matrix;
 struct LUResult;
 struct QRResult;
+struct EigenResult;
 
 class Matrix {
 public:
@@ -89,6 +90,8 @@ public:
     LUResult LUDecomp() const;
     // perform QR decomposition of the matrix with hosueholder reflections
     QRResult QRDecomp() const;
+    // get eigenvalues and eigenvectors of a symmetric matrix
+    EigenResult symmetricEigenQR(u32 maxIter = 1000, d64 tol = kDefaultAbsTol) const;
 
     d64 trace() const;
     // product of diagonal elements
@@ -140,6 +143,11 @@ struct LUResult {
 
 struct QRResult {
     Matrix Q, R;
+};
+
+struct EigenResult {
+    std::vector<d64> eigenvalues;
+    Matrix eigenvectors; // collumn i is the eigenvector for eigenvalues[i]
 };
 
 } // namespace linalg

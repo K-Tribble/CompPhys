@@ -443,6 +443,11 @@ QRResult Matrix::QRDecomp() const {
         Vec a(rows_ - i);
         a(0) = alpha;
         Vec v = Ri_col - a;
+        if (v.isZero(kDefaultAbsTol)) {
+            // colimn is already aligned with target axis (all zero below
+            // the pivot already, or exactly on it), no reflection needed
+            continue;
+        }
         v.normalize();
         Matrix Qn_prepad = identity(rows_ - i) - (v.outer(v) * 2);
         Matrix Qn = padMatrix(Qn_prepad, rows_);
@@ -451,6 +456,71 @@ QRResult Matrix::QRDecomp() const {
     }
 
     return {std::move(Q), std::move(R)};
+}
+
+EigenResult Matrix::symmetricEigenQR(u32 maxIter, d64 tol) const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("matrix must be square to have eigenvalues");
+    }
+    if (!isSymmetric()) {
+        throw std::invalid_argument("matrix must be symmetric for this eigenvalue algortihm");
+    }
+
+    u32 n = rows_;
+    Matrix A(*this);
+    Matrix eigenvectors = identity(n);
+    std::vector<d64> eigenvalues(n, 0.0);
+
+    u32 m = n;
+
+    while (m > 1) {
+        for (u32 iter = 0; iter < maxIter; ++iter) {
+            // Wilkonsin shift from the trailing 2x2 block of active mxm submatrix
+            d64 a = A(m - 2, m - 2);
+            d64 b = A(m - 2, m - 1);
+            d64 d = A(m - 1, m - 1);
+
+            d64 delta = (a - d) / 2.0;
+            d64 mu;
+            if (delta == 0.0 && b == 0.0) {
+                mu = d;
+            } else {
+                d64 sign = (delta >= 0.0) ? 1.0 : -1.0;
+                mu = d - (sign * b * b) / (std::fabs(delta) + std::sqrt(delta * delta + b * b)); 
+            }
+
+            Matrix activeBlock = A.sliceByRows(0, m).sliceByCols(0, m);
+            Matrix shifted = activeBlock - (identity(m) * mu);
+            QRResult qr = shifted.QRDecomp();
+            Matrix newBlock = (qr.R * qr.Q) + (identity(m) * mu);
+
+            for (u32 i = 0; i < m; ++i) {
+                for (u32 j = 0; j < m; ++j) {
+                    A(i, j) = newBlock(i, j);
+                }
+            }
+
+            Matrix Qpad = identity(n);
+            for (u32 i = 0; i < m; ++i) {
+                for (u32 j = 0; j < m; ++j) {
+                    Qpad(i, j) = qr.Q(i, j);
+                }
+            }
+
+            eigenvectors = eigenvectors * Qpad;
+
+            if (std::fabs(A(m - 1, m - 2)) < tol) {
+                break;
+            }
+        }
+
+        eigenvalues[m - 1] = A(m - 1, m - 1);
+        --m;
+    }
+
+    eigenvalues[0] = A(0, 0);
+
+    return {std::move(eigenvalues), std::move(eigenvectors)};
 }
 
 d64 Matrix::trace() const {
