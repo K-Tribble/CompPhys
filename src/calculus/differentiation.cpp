@@ -1,5 +1,6 @@
 #include "calculus/differentiation.hpp"
 #include "constants.hpp"
+#include <stdexcept>
 
 namespace calculus {
 
