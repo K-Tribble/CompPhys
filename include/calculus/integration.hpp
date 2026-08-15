@@ -15,7 +15,7 @@ namespace integrate {
     };
 
     template <typename F>
-    inline d64 trapezoidal(F&& func, const d64 a, const d64 b, d64 stopCondition = kIterStopCondition, u32 maxIter = 1000) {
+    inline IntegralResult trapezoidal(F&& func, const d64 a, const d64 b, d64 stopCondition = kIterStopCondition, u32 maxIter = 1000) {
         d64 h = b - a;
 
         d64 fa = func(a);
@@ -29,13 +29,13 @@ namespace integrate {
         d64 err = 0.0;
         bool converged = false;
 
-        while (numIter <= maxIter) {
+        while (numIter < maxIter) {
             h /= 2;
 
             d64 I_jp1 = 0.5 * Ij;
 
             for (u32 i = 1; i <= (1u << (j - 1)); ++i) {
-                I_jp1 += 0.5 * h * func(a + (2 * i - 1) * h);
+                I_jp1 += h * func(a + (2 * i - 1) * h);
             }
 
             err = std::fabs(I_jp1 - Ij) / std::max(std::fabs(Ij), 1.0); // use absolute error in case I_j is close to zero.
@@ -43,11 +43,12 @@ namespace integrate {
             if (err < stopCondition) {
                 converged = true;
                 break;
-            } else if (numIter == maxiter) {
+            } else if (numIter == maxIter) {
                 converged = false;
             }
 
             ++numIter;
+            ++j;
         }
 
         IntegralResult res;
@@ -60,7 +61,7 @@ namespace integrate {
     }
 
     template <typename F>
-    inline d64 simpsons(F&& func, const d64 a, const d64 b, d64 stopCondition = kIterStopCondition, u32 maxIter = 1000) {
+    inline IntegralResult simpsons(F&& func, const d64 a, const d64 b, d64 stopCondition = kIterStopCondition, u32 maxIter = 1000) {
         // Tj is the jth value of the integral as evaluated by the trapzoidal method. 
         // Sj is the jth value of the integral as evaluated by simpsons method, which can be calcualted with succesive Tj
         d64 h = b - a;
@@ -78,13 +79,13 @@ namespace integrate {
         d64 T_jm1;
         d64 Sj; 
 
-        while (numIter <= maxIter) {
+        while (numIter < maxIter) {
             h /= 2;
 
             d64 T_jp1 = 0.5 * Tj;
 
             for (u32 i = 1; i <= (1u << (j - 1)); ++i) {
-                T_jp1 += 0.5 * h * func(a + (2 * i - 1) * h);
+                T_jp1 += h * func(a + (2 * i - 1) * h);
             }
 
             Sj = 4.0 * T_jp1 / 3.0 - Tj / 3.0;
@@ -103,6 +104,7 @@ namespace integrate {
             T_jm1 = Tj;
             Tj = T_jp1;
             ++numIter;
+            ++j;
         }
 
         IntegralResult res;
