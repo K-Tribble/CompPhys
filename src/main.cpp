@@ -321,4 +321,16 @@ int main() {
     std::cout << newton_res.converged << "\n" << newton_res.foundRoot << "\n" << newton_res.root << "\n" << newton_res.function_val << "\n" << newton_res.numIter << std::endl;
     nonlin::RootIterResult secant_res = nonlin::secant(func, 24.0, 18.0);
     std::cout << secant_res.converged << "\n" << secant_res.foundRoot << "\n" << secant_res.root << "\n" << secant_res.function_val << "\n" << secant_res.numIter << std::endl;
+    std::cout << "\n\n\n\n\n";
+
+    Matrix testEig{{2, 1}, {1, 2}};
+
+    EigenResult eres = testEig.symmetricEigenQR();
+    d64 sumEig = 0.0;
+    for (auto& v : eres.eigenvalues) sumEig += v;
+    Matrix D = Matrix::diagonal(eres.eigenvalues);
+    std::cout << D;
+
+
+    std::cout << testEig.trace() << "\n" << sumEig << std::endl;
 }
