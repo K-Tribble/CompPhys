@@ -57,6 +57,7 @@ TEST_SRC = tests/test_vec.cpp \
 	tests/test_integration.cpp \
 	src/calculus/differentiation.cpp \
 	tests/test_nonlin.cpp \
+	tests/test_linalg_solve.cpp
 
 TEST_TARGET = build/tests
 
