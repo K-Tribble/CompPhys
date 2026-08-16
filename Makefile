@@ -52,7 +52,11 @@ TEST_SRC = tests/test_vec.cpp \
 	src/linalg/matrix.cpp \
 	src/linalg/vec.cpp \
 	src/linalg/linalg_interop.cpp \
-	src/linalg/linalg_solve.cpp
+	src/linalg/linalg_solve.cpp \
+	tests/test_differentiation.cpp \
+	tests/test_integration.cpp \
+	src/calculus/differentiation.cpp \
+	tests/test_nonlin.cpp \
 
 TEST_TARGET = build/tests
 
