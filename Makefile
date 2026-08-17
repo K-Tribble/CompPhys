@@ -43,12 +43,12 @@ rebuild: clean all
 
 # Count lines
 count:
-	find . \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 wc -l
+	find . -path './tests' -prune -o \
+		\( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 wc -l
 
 TEST_SRC = tests/test_vec.cpp \
 	tests/test_matrix.cpp \
 	tests/test_interop.cpp \
-	tests/test_eigen.cpp \
 	src/linalg/matrix.cpp \
 	src/linalg/vec.cpp \
 	src/linalg/linalg_interop.cpp \

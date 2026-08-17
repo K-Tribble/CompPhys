@@ -341,6 +341,27 @@ TEST_CASE("Matrix symmetric eigen decomposition", "[matrix][eigen]") {
     }
 }
 
+// more tests to test eigen decomposition of matrix
+static void checkEigenDecomposition(const Matrix& A) {
+    EigenResult res = A.symmetricEigenQR();
+    u32 n = A.rows();
+    for (u32 k = 0; k < n; ++k) {
+        Vec v = res.eigenvectors.getCol(k);
+        REQUIRE((A * v).isApprox(v * res.eigenvalues[k], 1e-7, 1e-7));
+    }
+    REQUIRE((res.eigenvectors.transpose() * res.eigenvectors).isApprox(Matrix::identity(n), 1e-7, 1e-7));
+    Matrix D = Matrix::diagonal(res.eigenvalues);
+    REQUIRE((res.eigenvectors * D * res.eigenvectors.transpose()).isApprox(A, 1e-7, 1e-7));
+    d64 sumEig = 0;
+    for (auto v : res.eigenvalues) sumEig += v;
+    REQUIRE(std::fabs(A.trace() - sumEig) < 1e-6);
+}
+
+TEST_CASE("Eigen decomp: 1x1") { checkEigenDecomposition(Matrix{{7}}); }
+TEST_CASE("Eigen decomp: 2x2 simple") { checkEigenDecomposition(Matrix{{2,1},{1,2}}); }
+TEST_CASE("Eigen decomp: 3x3 distinct eigenvalues") { checkEigenDecomposition(Matrix{{4,1,2},{1,3,0},{2,0,5}}); }
+TEST_CASE("Eigen decomp: repeated eigenvalue") { checkEigenDecomposition(Matrix{{2,0,0},{0,2,0},{0,0,3}}); }
+
 TEST_CASE("Matrix trace, diagProduct and getDiag", "[matrix][diag]") {
     Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
 
