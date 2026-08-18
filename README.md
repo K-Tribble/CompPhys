@@ -4,7 +4,7 @@ This project contains implementations developed while studying the Computational
 
 ## Features
 
-### 📐 Linear Algebra (`linalg/`)
+### Linear Algebra (`linalg/`)
 
 **Vector Operations** (`linalg/vec.hpp`)
 - Dense vector class with standard operations
@@ -45,7 +45,7 @@ This project contains implementations developed while studying the Computational
   - Flexible iteration limits
   - Configurable norm orders (L1, L2, etc.)
 
-### ∫ Calculus (`calculus/`)
+### Calculus (`calculus/`)
 
 **Numerical Differentiation** (`calculus/differentiation.hpp`)
 - First derivative computation with multiple schemes:
@@ -68,7 +68,7 @@ This project contains implementations developed while studying the Computational
   - Final error estimate
   - Number of iterations performed
 
-### 🔍 Nonlinear Solvers (`nonlin_solve.hpp`)
+### Nonlinear Solvers (`nonlin_solve.hpp`)
 
 **Root Finding Methods**
 - **Bisection method** - robust bracketing method for 1D root finding
@@ -90,7 +90,7 @@ This project contains implementations developed while studying the Computational
   - Iteration limit control (default: 1000)
   - Detailed result structure with convergence information
 
-### 📈 Interpolation (`interpolation.hpp`)
+### Interpolation (`interpolation.hpp`)
 
 **Interpolation Methods**
 - **Linear Interpolation (Lerp)** - piecewise linear approximation between known points
@@ -102,7 +102,7 @@ This project contains implementations developed while studying the Computational
   - Localized interpolation for performance
   - Supports natural spline boundary conditions
 
-### ⚙️ Utilities
+### Utilities
 
 **Type Definitions** (`types.hpp`)
 - `d64` - (double)
