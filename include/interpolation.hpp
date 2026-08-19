@@ -1,8 +1,8 @@
 #pragma once
  
 #include "linalg/matrix.hpp"
-#include "linalg/vec.hpp"
 #include "types.hpp"
+#include "scalar.hpp"
 #include <span>
 #include <cmath>
 
@@ -43,8 +43,8 @@ struct CubicSplineResult {
     Pi(x) = coeffs(0, i) * (x - xi)^3 + coeffs(1, i) * (x - xi)^2 + coeffs(2, i) * (x - xi) + coeffs(3, i)
     for i = 0 -> xVals.size() - 1
     */ 
-    linalg::Matrix coeffs;
-    CubicSplineResult(std::span<const d64> x, linalg::Matrix coeffs_) : xVals(x.begin(), x.end()), coeffs(std::move(coeffs_)) {};
+    linalg::Matrix<d64> coeffs;
+    CubicSplineResult(std::span<const d64> x, linalg::Matrix<d64> coeffs_) : xVals(x.begin(), x.end()), coeffs(std::move(coeffs_)) {};
 
     d64 CS(d64 x);
 };

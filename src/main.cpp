@@ -2,6 +2,8 @@
 #include <chrono>
 #include <utility>
 #include <random>
+#include <type_traits>
+#include <variant>
 #include "linalg/matrix.hpp"
 #include "linalg/vec.hpp"
 #include "linalg/linalg_common.hpp"
@@ -30,12 +32,12 @@ auto timeFunction(Func&& func, Args&&... args) {
     }
 }
 
-void compareInversion(const Matrix& matrix) {
+void compareInversion(const Matrix<d64>& matrix) {
     auto [gjDuration, gjInv] = timeFunction([&](){ return matrix.inverse(); });
 
     auto [cofactorDuration, cofactorInv] = timeFunction([&](){ return matrix.cofactorInversion(); });
 
-    Matrix I = Matrix::identity(matrix.rows());
+    Matrix<d64> I = Matrix<d64>::identity(matrix.rows());
 
     std::cout << "det(matrix) = " << matrix.determinant() << std::endl;
     std::cout << "matrix shape = (" << matrix.shape()[0] << ", " << matrix.shape()[1] << ")" << std::endl;
@@ -60,10 +62,10 @@ void compareInversion(const Matrix& matrix) {
 }
 
 int main() {
-    Matrix m{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};
-    Matrix m_inverse = m.inverse();
-    Matrix I = Matrix::identity(3);
-    Matrix prod = m * m_inverse;
+    Matrix<d64> m{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};
+    Matrix<d64> m_inverse = m.inverse();
+    Matrix<d64> I = Matrix<d64>::identity(3);
+    Matrix<d64> prod = m * m_inverse;
 
     std::cout << m.determinant() << std::endl;
     std::cout << "m:\n" << m << "m inverse:\n" << m_inverse << "product:\n" << prod;
@@ -76,18 +78,18 @@ int main() {
         std::cout << "Something doesnt work"  << std::endl;
     }
 
-    Matrix a{{1, -5}, {-2, 3}};
-    Matrix a_inverse = a.inverse();
-    Vec v{1, 2};
+    Matrix<d64> a{{1, -5}, {-2, 3}};
+    Matrix<d64> a_inverse = a.inverse();
+    Vec<d64> v{1, 2};
 
     std::cout << a.cols() << std::endl;
     std::cout << v.size() << std::endl;
 
     std::cout << "v: " << v << "a:\n" << a << "a inverse:\n" << a_inverse;
-    Vec av_prod = a * v;
+    Vec<d64> av_prod = a * v;
     std::cout << "a * v:\n" << av_prod;
 
-    Vec vAgain = a_inverse * av_prod;
+    Vec<d64> vAgain = a_inverse * av_prod;
     std::cout << "a inverse * a * v:\n" << vAgain;
 
     bool alsoWorks = vAgain.isApprox(v);
@@ -98,11 +100,11 @@ int main() {
         std::cout << "Matrix vector multiplication doesn't work"  << std::endl;
     }
 
-    Matrix b{{1, -2, 8, 7, 3}, {-5, 7.4, -8, 9, 2}, {-1, -2.3, 4, 2, 1}, {-4, -7, -6, 4, 1}, {9, -7.4, 2, -4.2, 5}};
+    Matrix<d64> b{{1, -2, 8, 7, 3}, {-5, 7.4, -8, 9, 2}, {-1, -2.3, 4, 2, 1}, {-4, -7, -6, 4, 1}, {9, -7.4, 2, -4.2, 5}};
 
     compareInversion(b);
 
-    Matrix c{
+    Matrix<d64> c{
         {1, -2, 8, 7, 3, -4, 6.2, 9},
         {-5, 7.4, -8, 9, 2, 3, -1.5, 6},
         {-1, -2.3, 4, 2, 1, 8, -7, 5.4},
@@ -115,14 +117,14 @@ int main() {
 
     compareInversion(c);
 
-    Matrix e{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};
+    Matrix<d64> e{{1, 2, 1}, {-2, 3.1, 1}, {1, -1, 5}};
 
-    LUResult res = e.LUDecomp();
-    Matrix L = res.L;
-    Matrix U = res.U;
-    Matrix P = res.P;
+    LUResult<d64> res = e.LUDecomp();
+    Matrix<d64> L = res.L;
+    Matrix<d64> U = res.U;
+    Matrix<d64> P = res.P;
     u32 num_swaps = res.numSwaps;
-    Matrix LU = L * U;
+    Matrix<d64> LU = L * U;
 
     std::cout << "Determinant from e = " << e.determinant() << "\n" 
         << "Determinant from U = " << U.diagProduct() * pow(-1, num_swaps) << std::endl;
@@ -134,31 +136,31 @@ int main() {
 
     std::cout << "e should equal P^-1LU=P^TLU\n" << P.transpose() * L * U;
 
-    Matrix A = {{3.0,  2.0, -1.0}, {2.0, -2.0,  4.0}, {-1.0, 0.5, -1.0}};
-    Vec rhs = {1.0, -2.0, 0.0};
-    Vec x_exact = {1.0, -2.0, -2.0};
-    Vec x_numerical = solve::lu(A, rhs);
+    Matrix<d64> A = {{3.0,  2.0, -1.0}, {2.0, -2.0,  4.0}, {-1.0, 0.5, -1.0}};
+    Vec<d64> rhs = {1.0, -2.0, 0.0};
+    Vec<d64> x_exact = {1.0, -2.0, -2.0};
+    Vec<d64> x_numerical = solve::lu(A, rhs);
     std::cout << x_exact << x_numerical << std::endl;
     std::cout << "Linear solving works: " << x_exact.isApprox(x_numerical) << std::endl;
 
     // Another test using the 8x8 c matrix from earlier
-    Vec rhs_1{-2.2, 19.8, -41.8, 24.8, -65.8, 92.6, -57.4, -26.4};
-    Vec x_exact2{1, 2, -1, 3, -2, 1, 4, -3};
+    Vec<d64> rhs_1{-2.2, 19.8, -41.8, 24.8, -65.8, 92.6, -57.4, -26.4};
+    Vec<d64> x_exact2{1, 2, -1, 3, -2, 1, 4, -3};
     auto [solveDuration, x_numerical2] = timeFunction([&](){ return solve::lu(c, rhs_1); });
     std::cout << x_exact2 << x_numerical2 << std::endl;
     std::cout << "Linear solving works: " << x_exact2.isApprox(x_numerical2) << std::endl;
     std::cout << "Solver took: " << solveDuration.count() << "microseconds" << std::endl;
 
-    Matrix cl = c.getLower();
-    Matrix cu = c.getUpper();
-    Matrix cd = Matrix::diagonal(c.getDiag());
-    Matrix shouldBe_c = cl + cu + cd;
+    Matrix<d64> cl = c.getLower();
+    Matrix<d64> cu = c.getUpper();
+    Matrix<d64> cd = Matrix<d64>::diagonal(c.getDiag());
+    Matrix<d64> shouldBe_c = cl + cu + cd;
 
     std::cout << "c:\n" << c << "c lower:\n" << cl << "c upper:\n" 
         << cu << "c diagonal:\n" << cd;
     std::cout << "Diagonal, and lower/upper split works: " << c.isApprox(shouldBe_c) << std::endl << "\n\n\n\n\n";
 
-    Matrix A_iter{
+    Matrix<d64> A_iter{
         {288.5, 6.4, -7.1, -9.3, 9.0, -2.9, -3.7, -4.2, -6.4, 8.9, -7.3, 7.4, 9.0, 4.0, -7.7, 5.2, 0.9, -9.1, -9.2, -7.6, -4.4, -4.0, 3.0, 5.5, -9.3, 4.4, -4.9, 8.4, 6.7, 8.0, 4.0, 0.8, -4.3, 1.5, 5.1, -2.8, -9.8, 9.5, -5.9, 7.9, 0.9, -1.2, -2.8, -6.0, -4.4, 9.6, -1.3, -7.3, -7.6, -0.2},
         {-7.5, 257.1, -0.8, -1.1, 5.5, -3.2, -8.8, 8.7, 1.8, 3.8, -6.8, -0.3, -7.9, 4.2, -2.4, 6.1, 5.9, -0.7, 4.8, -5.0, 8.1, -8.2, -8.8, 7.0, -4.1, 9.8, -2.5, -7.9, -4.0, -7.4, -0.2, -2.8, 1.7, 6.3, -0.6, -5.8, -0.5, -0.9, -4.6, 7.2, -3.1, 8.0, 7.5, 6.6, -8.1, 5.6, 6.3, -5.6, 3.7, 8.7},
         {-3.7, -5.8, 243.5, 1.9, -0.2, -3.0, 6.4, 7.7, 4.3, -4.3, 7.6, -1.6, 9.7, 9.9, -8.5, -4.1, -9.1, -1.9, 0.3, -3.1, -8.3, -4.5, 4.6, 8.4, -1.9, -4.5, 6.8, 2.8, 0.2, 6.5, 1.8, -6.3, -3.2, -6.4, -3.6, 9.1, 4.4, 3.8, -3.2, 9.2, 5.0, 1.0, 5.0, 0.3, -0.7, -4.3, -6.4, 3.1, 2.7, -7.6},
@@ -211,23 +213,25 @@ int main() {
         {-4.8, -6.8, -6.5, -8.1, 1.6, -5.5, 8.3, 1.4, -7.7, 7.5, -1.8, 7.1, -1.1, 8.2, -8.3, 4.1, 3.9, -2.5, -2.3, -5.9, 8.3, 8.2, 8.0, 6.4, -5.5, -0.7, 3.1, -4.2, -6.8, -4.8, -6.4, -3.9, 2.7, -9.3, -0.7, 4.2, 4.7, -0.5, 2.0, 4.2, -6.6, 5.7, -7.7, -8.3, -2.0, 0.2, 8.4, 8.5, 2.3, 253.8}
     };
 
-    Vec b_iter{-371.6, 1428.6, 1158.3, 2258.0, 3311.4, 1186.4, 909.4, 2305.2, 1386.7, 788.4, 1571.5, 4657.4, 4966.3, 4637.6, 2656.3, 5000.1, 3624.4, 5887.5, 4369.7, 5526.0, 4020.6, 6007.7, 5493.4, 7247.2, 5467.6, 6660.1, 7006.0, 7338.7, 7662.7, 7718.5, 7990.0, 6924.3, 7032.2, 8973.5, 9324.4, 9963.4, 9306.2, 9291.6, 7492.3, 10592.0, 9934.2, 12374.7, 12732.8, 7230.8, 12254.9, 12536.8, 10894.1, 12238.6, 12380.6, 12882.3};
+    Vec<d64> b_iter{-371.6, 1428.6, 1158.3, 2258.0, 3311.4, 1186.4, 909.4, 2305.2, 1386.7, 788.4, 1571.5, 4657.4, 4966.3, 4637.6, 2656.3, 5000.1, 3624.4, 5887.5, 4369.7, 5526.0, 4020.6, 6007.7, 5493.4, 7247.2, 5467.6, 6660.1, 7006.0, 7338.7, 7662.7, 7718.5, 7990.0, 6924.3, 7032.2, 8973.5, 9324.4, 9963.4, 9306.2, 9291.6, 7492.3, 10592.0, 9934.2, 12374.7, 12732.8, 7230.8, 12254.9, 12536.8, 10894.1, 12238.6, 12380.6, 12882.3};
 
-    Vec x_exact_iter{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0};
+    Vec<d64> x_exact_iter{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0};
 
-    solve::IterStoppingCondition sc;
+    solve::IterStoppingCondition<d64> sc;
     sc.stopCondition = 1e-14;
     sc.lnorm_ord = 2;
     sc.errType = solve::errorType::Fractional;
 
     const u32 maxIter = 1000;
 
-    auto [tJacobi, resJacobi] = timeFunction(solve::jacobi, A_iter, b_iter, sc, maxIter);
-    auto [tGS, resGS] = timeFunction(solve::gaussSeidel, A_iter, b_iter, sc, maxIter, solve::SplitType::Lower);
-    auto [tSOR, resSOR] = timeFunction(solve::sor, A_iter, b_iter, 1.5, sc, maxIter, solve::SplitType::Lower);
+    auto [tJacobi, resJacobi] = timeFunction([&]() {return solve::jacobi(A_iter, b_iter, sc, maxIter);});
 
-    auto report = [&](const std::string& name, const solve::IterResult& res, auto duration) {
-        Vec err = res.x_final - x_exact_iter;
+    auto [tGS, resGS] = timeFunction([&]() {return solve::gaussSeidel(A_iter, b_iter, sc, maxIter, solve::SplitType::Lower);});
+
+    auto [tSOR, resSOR] = timeFunction([&]() {return solve::sor(A_iter, b_iter, 1.5, sc, maxIter, solve::SplitType::Lower);});
+
+    auto report = [&](const std::string& name, const solve::IterResult<d64>& res, auto duration) {
+        Vec<d64> err = res.x_final - x_exact_iter;
         std::cout << name << ":\n"
                 << "  converged:            " << (res.success ? "yes" : "no") << "\n"
                 << "  iterations:           " << res.numIter << "\n"
@@ -257,7 +261,7 @@ int main() {
     // }
     // std::cout << wVals << iterNums << finalResNorm;
 
-    Matrix f{
+    Matrix<d64> f{
     { 0, -4,  2, -1, -4,  2, -2,  1, -1, -2},
     {-4,  4, -4, -1, -2,  2,  1, -3, -1,  1},
     { 2, -4,  4,  4, -2,  1,  0,  1,  4,  0},
@@ -276,30 +280,30 @@ int main() {
     std::cout << "Largest pair. Eigenvalue: " << lEV << "\n" << lEVec;
     std::cout << "Smallest pair. Eigenvalue: " << sEV << "\n" << sEVec;
 
-    Matrix A_qr{
+    Matrix<d64> A_qr{
     { 4,  3, -2,  1},
     { 2,  1,  3, -1},
     {-2,  4,  1,  2},
     { 1, -2,  2,  5}
     };
 
-    QRResult qrRes = A_qr.QRDecomp();
-    Matrix Q = qrRes.Q;
-    Matrix R = qrRes.R;
+    QRResult<d64> qrRes = A_qr.QRDecomp();
+    Matrix<d64> Q = qrRes.Q;
+    Matrix<d64> R = qrRes.R;
 
     std::cout << "Testing QR decomp for 4x4 matrix:\n";
     std::cout << "Q*R matches A_qr: " << A_qr.isApprox(Q * R) << std::endl;
-    std::cout << "My Q is orthogonal: " << (Q.transpose() * Q).isApprox(Matrix::identity(4)) << std::endl;
+    std::cout << "My Q is orthogonal: " << (Q.transpose() * Q).isApprox(Matrix<d64>::identity(4)) << std::endl;
     std::cout << "\n\n\n\n";
 
     // QR decompose the 50x50 matrix from earlier
-    QRResult A_iter_qr = A_iter.QRDecomp();
-    Matrix Q_iter = A_iter_qr.Q;
-    Matrix R_iter = A_iter_qr.R;
+    QRResult<d64> A_iter_qr = A_iter.QRDecomp();
+    Matrix<d64> Q_iter = A_iter_qr.Q;
+    Matrix<d64> R_iter = A_iter_qr.R;
 
     std::cout << "Testing QR decomp for 50x50 matrix:\n";
     std::cout << "Q*R matches A_qr: " << A_iter.isApprox(Q_iter * R_iter) << std::endl;
-    std::cout << "My Q is orthogonal: " << (Q_iter.transpose() * Q_iter).isApprox(Matrix::identity(50)) << std::endl;
+    std::cout << "My Q is orthogonal: " << (Q_iter.transpose() * Q_iter).isApprox(Matrix<d64>::identity(50)) << std::endl;
 
     // Testing nonlinear solving methods trying to find the positive root of x^2-17 = 0
     auto func = [](d64 x) {
@@ -323,12 +327,12 @@ int main() {
     std::cout << secant_res.converged << "\n" << secant_res.foundRoot << "\n" << secant_res.root << "\n" << secant_res.function_val << "\n" << secant_res.numIter << std::endl;
     std::cout << "\n\n\n\n\n";
 
-    Matrix testEig{{2, 1}, {1, 2}};
+    Matrix<d64> testEig{{2, 1}, {1, 2}};
 
-    EigenResult eres = testEig.symmetricEigenQR();
+    EigenResult<d64> eres = testEig.symmetricEigenQR();
     d64 sumEig = 0.0;
     for (auto& v : eres.eigenvalues) sumEig += v;
-    Matrix D = Matrix::diagonal(eres.eigenvalues);
+    Matrix<d64> D = Matrix<d64>::diagonal(eres.eigenvalues);
     std::cout << D;
 
 

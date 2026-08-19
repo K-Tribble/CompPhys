@@ -6,10 +6,6 @@ CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
 
 # Source and object files
 SRC = src/main.cpp \
-	src/linalg/matrix.cpp \
-	src/linalg/vec.cpp \
-	src/linalg/linalg_interop.cpp \
-	src/linalg/linalg_solve.cpp \
 	src/interpolation.cpp \
 	src/calculus/differentiation.cpp
 
@@ -44,18 +40,13 @@ rebuild: clean all
 # Count lines
 count:
 	find . -path './tests' -prune -o \
-		\( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 wc -l
+		\( -name '*.cpp' -o -name '*.hpp' -o -name '*.tpp' \) -print0 | xargs -0 wc -l
 
 TEST_SRC = tests/test_vec.cpp \
 	tests/test_matrix.cpp \
 	tests/test_interop.cpp \
-	src/linalg/matrix.cpp \
-	src/linalg/vec.cpp \
-	src/linalg/linalg_interop.cpp \
-	src/linalg/linalg_solve.cpp \
 	tests/test_differentiation.cpp \
 	tests/test_integration.cpp \
-	src/calculus/differentiation.cpp \
 	tests/test_nonlin.cpp \
 	tests/test_linalg_solve.cpp
 

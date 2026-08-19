@@ -15,139 +15,151 @@
 
 namespace linalg {
 
-class Vec;
+template <Scalar T> class Vec;
 
-class Matrix;
-struct LUResult;
-struct QRResult;
-struct EigenResult;
+template <Scalar T> class Matrix;
 
+template <Scalar T> struct LUResult;
+template <Scalar T> struct QRResult;
+template <Scalar T> struct EigenResult;
+
+template <Scalar T>
 class Matrix {
 public:
-    static constexpr d64 kSingularPivotTol = 100.0; // multiplier on machine epsilon 
+    static constexpr RealType<T> kSingularPivotTol = 100.0; // multiplier on machine epsilon 
 
-    Matrix(u32 rows, u32 cols, d64 init = 0.0);
+    Matrix(u32 rows, u32 cols, T init = T{});
 
-    Matrix(u32 rows, u32 cols, std::vector<d64> data);
+    Matrix(u32 rows, u32 cols, std::vector<T> data);
 
-    Matrix(std::initializer_list<std::initializer_list<d64>> init);
+    Matrix(std::initializer_list<std::initializer_list<T>> init);
 
     Matrix() = default;
 
-    static Matrix zeros(u32 rows, u32 cols);
-    static Matrix ones(u32 rows, u32 cols);
-    static Matrix identity(u32 n);
-    static Matrix diagonal(const std::vector<d64>& diag);
+    static Matrix<T> zeros(u32 rows, u32 cols);
+    static Matrix<T> ones(u32 rows, u32 cols);
+    static Matrix<T> identity(u32 n);
+    static Matrix<T> diagonal(const std::vector<T>& diag);
 
-    d64& operator()(u32 r, u32 c);
-    d64 operator()(u32 r, u32 c) const;
+    T& operator()(u32 r, u32 c);
+    T operator()(u32 r, u32 c) const;
     // Return ith row as a vector
-    Vec operator()(u32 i) const; 
+    Vec<T> operator()(u32 i) const; 
     // Return jth col as a vector
-    Vec getCol(u32 j) const;
+    Vec<T> getCol(u32 j) const;
 
     u32 rows() const;
     u32 cols() const;
 
-    std::vector<Vec> getRows() const;
-    std::vector<Vec> getCols() const;
+    std::vector<Vec<T>> getRows() const;
+    std::vector<Vec<T>> getCols() const;
 
     std::array<u32, 2> shape() const;
 
     void swapRows(u32 row1, u32 row2);
     void swapCols(u32 col1, u32 col2);
 
-    Matrix operator*(const Matrix& other) const;
-    Matrix operator*(d64 s) const;
-    Matrix& operator*=(d64 s);
+    Matrix<T> operator*(const Matrix<T>& other) const;
+    Matrix<T> operator*(T s) const;
+    Matrix<T>& operator*=(T s);
 
-    Matrix operator+(const Matrix& other) const;
-    Matrix& operator+=(const Matrix& other);
-    Matrix operator-(const Matrix& other) const;
-    Matrix& operator-=(const Matrix& other);
-    Matrix operator/(d64 s) const;
-    Matrix& operator/=(d64 s);
+    Matrix<T> operator+(const Matrix<T>& other) const;
+    Matrix<T>& operator+=(const Matrix<T>& other);
+    Matrix<T> operator-(const Matrix<T>& other) const;
+    Matrix<T>& operator-=(const Matrix<T>& other);
+    Matrix<T> operator/(T s) const;
+    Matrix<T>& operator/=(T s);
 
-    bool operator==(const Matrix& other) const;
-    bool isApprox(const Matrix& other, d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
-    bool isZero(d64 absTol = kDefaultAbsTol) const;
-    bool isSymmetric(d64 absTol = kDefaultAbsTol, d64 relTol = kDefaultRelTol) const;
+    bool operator==(const Matrix<T>& other) const;
+    bool isApprox(const Matrix<T>& other, RealType<T> absTol = kDefaultAbsTol, RealType<T> relTol = kDefaultRelTol) const;
+    bool isZero(RealType<T> absTol = kDefaultAbsTol) const;
+    bool isSymmetric(RealType<T> absTol = kDefaultAbsTol, RealType<T> relTol = kDefaultRelTol) const;
+    bool isHermitian(RealType<T> absTol = kDefaultAbsTol, RealType<T> relTol = kDefaultRelTol) const;
 
-    Matrix absDiff(const Matrix& other) const;
+    Matrix<T> absDiff(const Matrix<T>& other) const;
 
-    Matrix hadamard(const Matrix& other) const;
-    Matrix& hadamardInPlace(const Matrix& other);
+    Matrix<T> hadamard(const Matrix<T>& other) const;
+    Matrix<T>& hadamardInPlace(const Matrix<T>& other);
 
-    Matrix transpose() const;
+    Matrix<T> conj() const;
+    Matrix<T> transpose() const;
+    Matrix<T> adjoint() const;
 
-    d64 determinant() const;
+    T determinant() const;
 
-    Matrix getMinor(u32 i, u32 j) const;
+    Matrix<T> getMinor(u32 i, u32 j) const;
 
-    Matrix getCofactorMatrix() const;
+    Matrix<T> getCofactorMatrix() const;
 
     // perform LU decomposition of the matrix with doolittle choice 
-    LUResult LUDecomp() const;
+    LUResult<T> LUDecomp() const;
     // perform QR decomposition of the matrix with hosueholder reflections
-    QRResult QRDecomp() const;
+    QRResult<T> QRDecomp() const;
     // get eigenvalues and eigenvectors of a symmetric matrix
-    EigenResult symmetricEigenQR(u32 maxIter = 1000, d64 tol = kDefaultAbsTol) const;
+    EigenResult<T> symmetricEigenQR(u32 maxIter = 1000, RealType<T> tol = kDefaultAbsTol) const;
 
-    d64 trace() const;
+    T trace() const;
     // product of diagonal elements
-    d64 diagProduct() const;
+    T diagProduct() const;
     // Get diagonal elements
-    std::vector<d64> getDiag() const;
+    std::vector<T> getDiag() const;
     // Get a Matrix with all elements below main diagonal
-    Matrix getLower() const;
+    Matrix<T> getLower() const;
     // Get a Matrix with all elements above main diagonal
-    Matrix getUpper() const;
+    Matrix<T> getUpper() const;
 
-    Matrix inverse() const;
-    Matrix cofactorInversion() const;
+    Matrix<T> inverse() const;
+    Matrix<T> cofactorInversion() const;
 
+    // The following methdos only find the largest modulus real eigenvalue and its associated real eigenvector
     // returns the eigenvalue with the largest modulus and its associated normalized eigenvector
-    std::pair<d64, Vec> largestEigenPair(u32 power = 50) const;
+    std::pair<RealType<T>, Vec<RealType<T>>> largestEigenPair(u32 power = 50) const;
     // returns the eigenvalue with the smalles modulus and its associated normalized eigenvector
-    std::pair<d64, Vec> smallestEigenPair(u32 power = 50) const;
+    std::pair<RealType<T>, Vec<RealType<T>>> smallestEigenPair(u32 power = 50) const;
     // Returns the eigenvalue closest to a value alpha and its associated normalized eigenvector
-    std::pair<d64, Vec> eigenPairClosestTo(d64 alpha, u32 power = 50) const;
+    std::pair<RealType<T>, Vec<RealType<T>>> eigenPairClosestTo(RealType<T> alpha, u32 power = 50) const;
 
-    d64 sumElements() const;
+    T sumElements() const;
 
-    Matrix sum(u32 axis = 0) const;
+    Matrix<T> sum(u32 axis = 0) const;
 
     // Return a matrix with just rows from start (inclusive) to finish (exclusive)
-    Matrix sliceByRows(u32 start, u32 finish) const;
+    Matrix<T> sliceByRows(u32 start, u32 finish) const;
     // Same but for columns
-    Matrix sliceByCols(u32 start, u32 finish) const;
+    Matrix<T> sliceByCols(u32 start, u32 finish) const;
 
-    Matrix& matmulInto(const Matrix& other, Matrix& out) const;
+    Matrix<T>& matmulInto(const Matrix<T>& other, Matrix<T>& out) const;
 
-    d64 max() const;
-    d64 min() const;
+    RealType<T> max() const;
+    RealType<T> min() const;
 
 private:
     u32 rows_, cols_;
-    std::vector<d64> data_;
+    std::vector<T> data_;
 
     u32 linearIndex(u32 r, u32 c) const;
 };
 
-std::ostream& operator<<(std::ostream&, const Matrix&);
+template <Scalar T>
+std::ostream& operator<<(std::ostream&, const Matrix<T>&);
 
+template <Scalar T>
 struct LUResult {
-    Matrix P, L, U;
+    Matrix<T> P, L, U;
     u32 numSwaps;
 };
 
+template <Scalar T>
 struct QRResult {
-    Matrix Q, R;
+    Matrix<T> Q, R;
 };
 
+template <Scalar T>
 struct EigenResult {
-    std::vector<d64> eigenvalues;
-    Matrix eigenvectors; // collumn i is the eigenvector for eigenvalues[i]
+    std::vector<RealType<T>> eigenvalues;
+    Matrix<T> eigenvectors; // collumn i is the eigenvector for eigenvalues[i]
 };
 
 } // namespace linalg
+
+#include "linalg/matrix.tpp"

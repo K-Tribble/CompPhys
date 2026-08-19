@@ -6,6 +6,7 @@
 #include <functional>
 #include "types.hpp"
 #include "constants.hpp"
+#include "scalar.hpp"
 
 namespace linalg {
 
@@ -19,47 +20,63 @@ namespace solve {
         Lower, Upper    
     };  
 
+    template <Scalar T>
     struct IterStoppingCondition {  
-        d64 stopCondition = kIterStopCondition;  
-        d64 lnorm_ord = 2;  
+        RealType<T> stopCondition = kIterStopCondition;  
+        RealType<T> lnorm_ord = 2;  
         errorType errType = errorType::Fractional;  
     };  
 
+    template <Scalar T>
     struct IterResult { 
-        d64 lnorm_ord;  
+        RealType<T> lnorm_ord;  
         errorType errType;  
         bool success;   
-        Vec x_final;    
-        Vec finalResidualVector;    
-        d64 finalFractionalResErr;  
+        Vec<T> x_final;    
+        Vec<T> finalResidualVector;    
+        RealType<T> finalFractionalResErr;  
         u32 numIter;    
     };  
 
     
     // Solves Ax=b for when A is lower triangular by forward substitution
-    Vec forwardSub(const Matrix& lt, const Vec& rhs);
+    template <Scalar T>
+    Vec<T> forwardSub(const Matrix<T>& lt, const Vec<T>& rhs);
+
     // Solves Ax=b for when A is uperr triangular by backward substitution
-    Vec backSub(const Matrix& up, const Vec& rhs);
+    template <Scalar T>
+    Vec<T> backSub(const Matrix<T>& up, const Vec<T>& rhs);
     
-    Vec lu(const LUResult& f, const Vec& b);
-    std::vector<Vec> lu(const LUResult& f, const std::vector<Vec>& bs);
+    template <Scalar T>
+    Vec<T> lu(const LUResult<T>& f, const Vec<T>& b);
+    template <Scalar T>
+    std::vector<Vec<T>> lu(const LUResult<T>& f, const std::vector<Vec<T>>& bs);
     
-    Vec lu(const Matrix& A, const Vec& b);
+    template <Scalar T>
+    Vec<T> lu(const Matrix<T>& A, const Vec<T>& b);
     
-    std::vector<Vec> lu(const Matrix& A, const std::vector<Vec>& bs);
+    template <Scalar T>
+    std::vector<Vec<T>> lu(const Matrix<T>& A, const std::vector<Vec<T>>& bs);
     
     // type alias to define a function evaluate the update step in an iterative method
-    using solveFn = std::function<Vec(const Matrix&, const Vec&)>;
-    IterResult runSplitIteration(const Matrix& A, const Vec& b, const Matrix& B, const Matrix& S, 
-        const solveFn& solve, IterStoppingCondition sc, const u32 maxIter);
+    template <Scalar T>
+    using solveFn = std::function<Vec<T>(const Matrix<T>&, const Vec<T>&)>;
+    template <Scalar T>
+    IterResult<T> runSplitIteration(const Matrix<T>& A, const Vec<T>& b, const Matrix<T>& B, const Matrix<T>& S, 
+        const solveFn<T>& solve, IterStoppingCondition<T> sc, const u32 maxIter);
     // Iterative solver with jacobi method
-    IterResult jacobi(const Matrix& A, const Vec& b, IterStoppingCondition sc, const u32 maxIter);
+    template <Scalar T>
+    IterResult<T> jacobi(const Matrix<T>& A, const Vec<T>& b, IterStoppingCondition<T> sc, const u32 maxIter);
     // Iterative solver with successive over relaxation method
     // the paramter w is the relaxation parameter defined as 1/a
-    IterResult sor(const Matrix& A, const Vec& b, const d64 w, IterStoppingCondition sc, const u32 maxIter, SplitType split = SplitType::Lower);
+    template <Scalar T>
+    IterResult<T> sor(const Matrix<T>& A, const Vec<T>& b, const RealType<T> w, IterStoppingCondition<T> sc, const u32 maxIter, SplitType split = SplitType::Lower);
     // Iterative solver with gauss seidel method
-    IterResult gaussSeidel(const Matrix& A, const Vec& b, IterStoppingCondition sc, const u32 maxIter, SplitType split = SplitType::Lower);
+    template <Scalar T>
+    IterResult<T> gaussSeidel(const Matrix<T>& A, const Vec<T>& b, IterStoppingCondition<T> sc, const u32 maxIter, SplitType split = SplitType::Lower);
 
 } // namespace solve
     
 } // namespace linalg
+
+#include "linalg/linalg_solve.tpp"

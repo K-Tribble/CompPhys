@@ -14,13 +14,16 @@
 
 namespace linalg {
 
-Matrix::Matrix(u32 rows, u32 cols, d64 init)
+template <Scalar T>
+Matrix<T>::Matrix(u32 rows, u32 cols, T init)
     : rows_(rows), cols_(cols), data_(rows * cols, init) {}
 
-Matrix::Matrix(u32 rows, u32 cols, std::vector<d64> data)
+template <Scalar T>
+Matrix<T>::Matrix(u32 rows, u32 cols, std::vector<T> data)
     : rows_(rows), cols_(cols), data_(std::move(data)) {}
 
-Matrix::Matrix(std::initializer_list<std::initializer_list<d64>> init) 
+template <Scalar T>
+Matrix<T>::Matrix(std::initializer_list<std::initializer_list<T>> init) 
     : rows_(init.size()), cols_(init.size() ? init.begin()->size() : 0) {
     data_.reserve(rows_ * cols_);
     for (const auto& row : init) {
@@ -31,23 +34,27 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<d64>> init)
      }
 }
 
-Matrix Matrix::zeros(u32 rows, u32 cols) {return Matrix(rows, cols, 0.0);}
+template <Scalar T>
+Matrix<T> Matrix<T>::zeros(u32 rows, u32 cols) {return Matrix<T>(rows, cols, T{0.0});}
 
-Matrix Matrix::ones(u32 rows, u32 cols) {return Matrix(rows, cols, 1.0);}
+template <Scalar T>
+Matrix<T> Matrix<T>::ones(u32 rows, u32 cols) {return Matrix<T>(rows, cols, T{1.0});}
 
-Matrix Matrix::identity(u32 n) {
-    Matrix m(n, n, 0.0);
+template <Scalar T>
+Matrix<T> Matrix<T>::identity(u32 n) {
+    Matrix<T> m(n, n, T{0});
     
     for (u32 i = 0; i < n; ++i) {
-        m(i, i) = 1.0;
+        m(i, i) = T{1.0};
     }
 
     return m;
 }
 
-Matrix Matrix::diagonal(const std::vector<d64>& diag) {
+template <Scalar T>
+Matrix<T> Matrix<T>::diagonal(const std::vector<T>& diag) {
     u32 n = diag.size();
-    Matrix m(n, n, 0.0);
+    Matrix m(n, n);
 
     for (u32 i = 0; i < n; ++i) {
         m(i, i) = diag[i];
@@ -56,23 +63,27 @@ Matrix Matrix::diagonal(const std::vector<d64>& diag) {
     return m;
 }
 
-u32 Matrix::linearIndex(u32 r, u32 c) const {
+template <Scalar T>
+u32 Matrix<T>::linearIndex(u32 r, u32 c) const {
     if (r >= rows_ || c >= cols_) {
         throw std::out_of_range("matrix index out of range");
     }
     return r * cols_ + c;
 }
 
-d64& Matrix::operator()(u32 r, u32 c) {
+template <Scalar T>
+T& Matrix<T>::operator()(u32 r, u32 c) {
     return data_[linearIndex(r, c)];
 }
 
-d64 Matrix::operator()(u32 r, u32 c) const {
+template <Scalar T>
+T Matrix<T>::operator()(u32 r, u32 c) const {
     return data_[linearIndex(r, c)];
 }
 
-Vec Matrix::operator()(u32 i) const {
-    std::vector<d64> buff; 
+template <Scalar T>
+Vec<T> Matrix<T>::operator()(u32 i) const {
+    std::vector<T> buff; 
     buff.reserve(cols_);
 
     for (u32 j = 0; j < cols_; ++j) {
@@ -82,8 +93,9 @@ Vec Matrix::operator()(u32 i) const {
     return Vec(buff);
 }
 
-Vec Matrix::getCol(u32 j) const {
-    std::vector<d64> buff;
+template <Scalar T>
+Vec<T> Matrix<T>::getCol(u32 j) const {
+    std::vector<T> buff;
     buff.reserve(rows_);
 
     for (u32 i = 0; i < rows_; ++ i) {
@@ -93,20 +105,23 @@ Vec Matrix::getCol(u32 j) const {
     return Vec(buff);
 }
 
-u32 Matrix::rows() const {
+template <Scalar T>
+u32 Matrix<T>::rows() const {
     return rows_;
 }
 
-u32 Matrix::cols() const {
+template <Scalar T>
+u32 Matrix<T>::cols() const {
     return cols_;
 }
 
-std::vector<Vec> Matrix::getRows() const {
-    std::vector<Vec> rows;
+template <Scalar T>
+std::vector<Vec<T>> Matrix<T>::getRows() const {
+    std::vector<Vec<T>> rows;
     rows.reserve(rows_);
 
     for (u32 i = 0; i < rows_; ++i) {
-        std::vector<d64> row;
+        std::vector<T> row;
         row.reserve(cols_);
 
         for (u32 j = 0; j < cols_; ++j) {
@@ -119,12 +134,13 @@ std::vector<Vec> Matrix::getRows() const {
     return rows;
 }
 
-std::vector<Vec> Matrix::getCols() const {
-    std::vector<Vec> cols;
+template <Scalar T>
+std::vector<Vec<T>> Matrix<T>::getCols() const {
+    std::vector<Vec<T>> cols;
     cols.reserve(cols_);
 
     for (u32 j = 0; j < cols_; ++j) {
-        std::vector<d64> col;
+        std::vector<T> col;
         col.reserve(rows_);
 
         for (u32 i = 0; i < rows_; ++i) {
@@ -137,11 +153,13 @@ std::vector<Vec> Matrix::getCols() const {
     return cols;
 }
 
-std::array<u32, 2> Matrix::shape() const {
+template <Scalar T>
+std::array<u32, 2> Matrix<T>::shape() const {
     return {rows_, cols_};
 }
 
-void Matrix::swapRows(u32 row1, u32 row2) {
+template <Scalar T>
+void Matrix<T>::swapRows(u32 row1, u32 row2) {
     if (row1 == row2) {
         return;
     }
@@ -155,7 +173,8 @@ void Matrix::swapRows(u32 row1, u32 row2) {
     }
 }
 
-void Matrix::swapCols(u32 col1, u32 col2) {
+template <Scalar T>
+void Matrix<T>::swapCols(u32 col1, u32 col2) {
     if (col1 == col2) {
         return;
     }
@@ -169,15 +188,17 @@ void Matrix::swapCols(u32 col1, u32 col2) {
     }
 }
 
-Matrix Matrix::operator*(const Matrix& other) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::operator*(const Matrix<T>& other) const {
     if (cols_ != other.rows_)
         throw std::invalid_argument("matmul dimension mismatch");
-    Matrix result(rows_, other.cols_);
+    Matrix<T> result(rows_, other.cols_);
     matmulInto(other, result);
     return result;
 }
 
-Matrix Matrix::operator*(d64 s) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::operator*(T s) const {
     Matrix result(*this);
 
     detail::scaleInPlace(result.data_, s);
@@ -185,49 +206,56 @@ Matrix Matrix::operator*(d64 s) const {
     return result;
 }
 
-Matrix& Matrix::operator*=(d64 s) {
+template <Scalar T>
+Matrix<T>& Matrix<T>::operator*=(T s) {
     detail::scaleInPlace(data_, s);
 
     return *this;
 }
 
-Matrix Matrix::operator/(d64 s) const {
-    Matrix result(*this);
+template <Scalar T>
+Matrix<T> Matrix<T>::operator/(T s) const {
+    Matrix<T> result(*this);
 
     detail::scaleInPlace(result.data_, 1.0 / s);
 
     return result;
 }
 
-Matrix& Matrix::operator/=(d64 s) {
+template <Scalar T>
+Matrix<T>& Matrix<T>::operator/=(T s) {
     detail::scaleInPlace(data_, 1.0 / s);
 
     return *this;
 }
 
-bool Matrix::operator==(const Matrix& other) const {
+template <Scalar T>
+bool Matrix<T>::operator==(const Matrix<T>& other) const {
     return rows_ == other.rows_ && cols_ == other.cols_ && data_ == other.data_;
 }
 
-bool Matrix::isApprox(const Matrix& other, d64 absTol, d64 relTol) const {
+template <Scalar T>
+bool Matrix<T>::isApprox(const Matrix<T>& other, RealType<T> absTol, RealType<T> relTol) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) return false;
 
     return detail::approxEqual(data_, other.data_, absTol, relTol);
 }
 
-bool Matrix::isZero(d64 absTol) const {
+template <Scalar T>
+bool Matrix<T>::isZero(RealType<T> absTol) const {
     return detail::isZero(data_, absTol);
 }
 
-bool Matrix::isSymmetric(d64 absTol, d64 relTol) const {
+template <Scalar T>
+bool Matrix<T>::isSymmetric(RealType<T> absTol, RealType<T> relTol) const {
     if (rows_ != cols_) return false;
 
     for (u32 i = 0; i < rows_; ++i) {
         for (u32 j = i + 1; j < cols_; ++j) {
-            d64 a = (*this)(i, j);
-            d64 b = (*this)(j, i);
-            d64 diff = std::fabs(a - b);
-            d64 largest = std::max(std::fabs(a), std::fabs(b));
+            T a = (*this)(i, j);
+            T b = (*this)(j, i);
+            RealType<T> diff = std::abs(a - b);
+            RealType<T> largest = std::max(std::abs(a), std::abs(b));
             if (diff > std::max(absTol, relTol * largest)) return false;
         }
     }
@@ -235,16 +263,47 @@ bool Matrix::isSymmetric(d64 absTol, d64 relTol) const {
     return true;
 }
 
-Matrix Matrix::absDiff(const Matrix& other) const {
+template <Scalar T>
+bool Matrix<T>::isHermitian(RealType<T> absTol, RealType<T> relTol) const {
+    if (rows_ != cols_) return false;
+
+    for (u32 i = 0; i < rows_; ++i) {
+        for (u32 j = i + 1; j < cols_; ++j) {
+            T a = (*this)(i, j);
+            T b = conjugate((*this)(j, i));
+            RealType<T> diff = std::abs(a - b);
+            RealType<T> largest = std::max(std::abs(a), std::abs(b));
+            if (diff > std::max(absTol, relTol * largest)) return false;
+        }
+    }
+
+    return true;
+}
+
+template <Scalar T>
+Matrix<T> Matrix<T>::absDiff(const Matrix<T>& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("Shape mismatch");
     }
 
-    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, [](d64 a, d64 b) {return std::fabs(a - b);}));
+    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, [](T a, T b) {return std::abs(a - b);}));
 }
 
-Matrix Matrix::transpose() const {
-    Matrix result(cols_, rows_);
+template <Scalar T>
+Matrix<T> Matrix<T>::conj() const {
+    Matrix<T> result(rows_, cols_);
+    for (u32 i = 0; i < rows_; ++i) {
+        for (u32 j = 0; j < cols_; ++j) {
+            result(i, j) = conjugate((*this)(i,j));
+        }
+    }
+
+    return result;
+}
+
+template <Scalar T>
+Matrix<T> Matrix<T>::transpose() const {
+    Matrix<T> result(cols_, rows_);
 
     for (u32 i = 0; i < rows_; ++i) {
         for (u32 j = 0; j < cols_; ++j) {
@@ -255,7 +314,13 @@ Matrix Matrix::transpose() const {
     return result;
 }
 
-d64 Matrix::determinant() const {
+template <Scalar T>
+Matrix<T> Matrix<T>::adjoint() const {
+    return conj().transpose();
+}
+
+template <Scalar T>
+T Matrix<T>::determinant() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("Must be a square matrix to calculate determinant");
     }
@@ -269,14 +334,14 @@ d64 Matrix::determinant() const {
     }
 
     const u32 n = rows_;
-    Matrix A = *this;
-    d64 det = 1.0;
-    const d64 tolerance = std::numeric_limits<d64>::epsilon() * kSingularPivotTol;
+    Matrix<T> A = *this;
+    T det = 1.0;
+    const RealType<T> tolerance = std::numeric_limits<RealType<T>>::epsilon() * kSingularPivotTol;
 
     for (u32 i = 0; i < n; ++i) {
         u32 pivot_row = i;
         for (u32 r = i + 1; r < n; ++r) {
-            if (std::fabs(A(r, i)) > std::fabs(A(pivot_row, i))) {
+            if (std::abs(A(r, i)) > std::abs(A(pivot_row, i))) {
                 pivot_row = r;
             }
         }
@@ -286,15 +351,15 @@ d64 Matrix::determinant() const {
             det *= -1.0;
         }
 
-        const d64 pivot = A(i, i);
-        if (std::fabs(pivot) <= tolerance) {
+        const T pivot = A(i, i);
+        if (std::abs(pivot) <= tolerance) {
             return 0.0;
         }
 
         det *= pivot;
 
         for (u32 r = i + 1; r < n; ++r) {
-            const d64 factor = A(r, i) / pivot;
+            const T factor = A(r, i) / pivot;
             if (factor == 0.0) {
                 continue;
             }
@@ -309,7 +374,8 @@ d64 Matrix::determinant() const {
     return det;
 }
 
-Matrix Matrix::getMinor(u32 i, u32 j) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::getMinor(u32 i, u32 j) const {
     if (rows_ < 2 || cols_ < 2) {
         throw std::invalid_argument("minor requires at least a 2x2 matrix");
     }
@@ -317,7 +383,7 @@ Matrix Matrix::getMinor(u32 i, u32 j) const {
         throw std::out_of_range("minor index out of range");
     }
 
-    Matrix minor(rows_ - 1, cols_ - 1);
+    Matrix<T> minor(rows_ - 1, cols_ - 1);
 
     for (u32 r = 0; r < rows_; ++r) {
         if (r == i) {
@@ -337,14 +403,15 @@ Matrix Matrix::getMinor(u32 i, u32 j) const {
     return minor;
 }
 
-Matrix Matrix::getCofactorMatrix() const {
-    Matrix cofactor(rows_, cols_);
+template <Scalar T>
+Matrix<T> Matrix<T>::getCofactorMatrix() const {
+    Matrix<T> cofactor(rows_, cols_);
 
     for (u32 i = 0; i < rows_; ++i) {
         for (u32 j = 0; j < cols_; ++j) {
-            Matrix minor = getMinor(i, j);
-            d64 minorDet = minor.determinant();
-            const d64 sign = ((i + j) % 2 == 0) ? 1.0 : -1.0;
+            Matrix<T> minor = getMinor(i, j);
+            T minorDet = minor.determinant();
+            const RealType<T> sign = ((i + j) % 2 == 0) ? 1.0 : -1.0;
             cofactor(i, j) = minorDet * sign;
         }
     }
@@ -352,24 +419,25 @@ Matrix Matrix::getCofactorMatrix() const {
     return cofactor;
 }
 
-LUResult Matrix::LUDecomp() const {
+template <Scalar T>
+LUResult<T> Matrix<T>::LUDecomp() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to LU decompose");
     }
 
     u32 n = rows_;
-    Matrix A = *this;
-    Matrix L = identity(n);
-    Matrix U(n, n, 0.0);
+    Matrix<T> A = *this;
+    Matrix<T> L = identity(n);
+    Matrix<T> U(n, n, 0.0);
     std::vector<u32> perm(n);
     std::iota(perm.begin(), perm.end(), 0);
     u32 numSwaps = 0;
 
     for (u32 i = 0; i < n; ++i) {
         u32 pivotRow = i;
-        d64 pivotVal = std::abs(A(i, i));
+        T pivotVal = std::abs(A(i, i));
         for (u32 k = i + 1; k < n; ++k) {
-            d64 v = std::abs(A(k, i));
+            T v = std::abs(A(k, i));
             if (v > pivotVal) {
                 pivotVal = v;
                 pivotRow = k;
@@ -390,7 +458,7 @@ LUResult Matrix::LUDecomp() const {
         }
 
         for (u32 j = i; j < n; ++j) {
-            d64 sum = A(i, j);
+            T sum = A(i, j);
             for (u32 k = 0; k < i; ++k) {
                 sum -= L(i, k) * U(k, j);
             }
@@ -398,7 +466,7 @@ LUResult Matrix::LUDecomp() const {
         }
 
         for (u32 j = i + 1; j < n; ++j) {
-            d64 sum = A(j, i);
+            T sum = A(j, i);
             for (u32 k = 0; k < i; ++k) {
                 sum -= L(j, k) * U(k, i);
             }
@@ -407,7 +475,7 @@ LUResult Matrix::LUDecomp() const {
     }
 
     // build P such that P * A_original = L * U
-    Matrix P(n, n, 0.0);
+    Matrix<T> P(n, n);
     for (u32 i = 0; i < n; ++i) {
         P(i, perm[i]) = 1.0;
     }
@@ -415,16 +483,17 @@ LUResult Matrix::LUDecomp() const {
     return {std::move(P), std::move(L), std::move(U), numSwaps};
 }
 
-QRResult Matrix::QRDecomp() const {
+template <Scalar T>
+QRResult<T> Matrix<T>::QRDecomp() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square for this QR decomposition to work");
     }
 
-    Matrix R(*this);
-    Matrix Q = identity(rows_);
+    Matrix<T> R(*this);
+    Matrix<T> Q = identity(rows_);
 
-    auto padMatrix = [&](Matrix& Q, u32 n) {
-        Matrix res = identity(n);
+    auto padMatrix = [&](Matrix<T>& Q, u32 n) {
+        Matrix<T> res = identity(n);
         u32 m = Q.rows_;
 
         for (u32 i = n - m; i < n; ++i) {
@@ -437,20 +506,24 @@ QRResult Matrix::QRDecomp() const {
     };
 
     for (u32 i = 0; i < rows_ - 1; ++i) {
-        Vec Ri_col = R.sliceByRows(i, rows_).getCol(i);
-        d64 sign = (Ri_col(0) >= 0.0) ? 1.0 : -1.0;
-        d64 alpha = sign * Ri_col.norm();
-        Vec a(rows_ - i);
-        a(0) = alpha;
-        Vec v = Ri_col - a;
-        if (v.isZero(kDefaultAbsTol)) {
-            // colimn is already aligned with target axis (all zero below
-            // the pivot already, or exactly on it), no reflection needed
-            continue;
-        }
+        Vec<T> Ri_col = R.sliceByRows(i, rows_).getCol(i);
+        RealType<T> col_norm = Ri_col.norm();
+        if (col_norm < kDefaultAbsTol) continue;
+
+        T x0 = Ri_col(0);
+        RealType<T> abs_x0 = std::abs(x0);
+        T phase = (abs_x0 == RealType<T>(0)) ? T(1) : (x0 / abs_x0);
+        T alpha = phase * col_norm;
+
+        Vec<T> v = Ri_col;
+        v(0) += alpha;
+
+        RealType<T> v_norm = v.norm();
+        if (v_norm < kDefaultAbsTol) continue;
+
         v.normalize();
-        Matrix Qn_prepad = identity(rows_ - i) - (v.outer(v) * 2);
-        Matrix Qn = padMatrix(Qn_prepad, rows_);
+        Matrix<T> Qn_prepad = identity(rows_ - i) - (v.outer(v.conj_inplace()) * T(2.0));
+        Matrix<T> Qn = padMatrix(Qn_prepad, rows_);
         R = Qn * R;
         Q = Q * Qn.transpose();
     }
@@ -458,41 +531,43 @@ QRResult Matrix::QRDecomp() const {
     return {std::move(Q), std::move(R)};
 }
 
-EigenResult Matrix::symmetricEigenQR(u32 maxIter, d64 tol) const {
+template <Scalar T>
+EigenResult<T> Matrix<T>::symmetricEigenQR(u32 maxIter, RealType<T> tol) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
-    if (!isSymmetric()) {
+    if (!isHermitian()) {
         throw std::invalid_argument("matrix must be symmetric for this eigenvalue algortihm");
     }
 
     u32 n = rows_;
-    Matrix A(*this);
-    Matrix eigenvectors = identity(n);
-    std::vector<d64> eigenvalues(n, 0.0);
+    Matrix<T> A(*this);
+    Matrix<T> eigenvectors = identity(n);
+    std::vector<RealType<T>> eigenvalues(n, 0.0);
 
     u32 m = n;
 
     while (m > 1) {
         for (u32 iter = 0; iter < maxIter; ++iter) {
             // Wilkonsin shift from the trailing 2x2 block of active mxm submatrix
-            d64 a = A(m - 2, m - 2);
-            d64 b = A(m - 2, m - 1);
-            d64 d = A(m - 1, m - 1);
+            RealType<T> a = std::real(A(m - 2, m - 2));
+            T b = A(m - 2, m - 2);
+            RealType<T> b_abs_sq = std::norm(b);
+            RealType<T> d = A(m - 1, m - 1);
 
-            d64 delta = (a - d) / 2.0;
-            d64 mu;
+            RealType<T> delta = (a - d) / 2.0;
+            RealType<T> mu;
             if (delta == 0.0 && b == 0.0) {
                 mu = d;
             } else {
-                d64 sign = (delta >= 0.0) ? 1.0 : -1.0;
-                mu = d - (sign * b * b) / (std::fabs(delta) + std::sqrt(delta * delta + b * b)); 
+                RealType<T> sign = (delta >= 0.0) ? 1.0 : -1.0;
+                mu = d - (sign * b * b) / (std::abs(delta) + std::sqrt(delta * delta + b_abs_sq)); 
             }
 
-            Matrix activeBlock = A.sliceByRows(0, m).sliceByCols(0, m);
-            Matrix shifted = activeBlock - (identity(m) * mu);
-            QRResult qr = shifted.QRDecomp();
-            Matrix newBlock = (qr.R * qr.Q) + (identity(m) * mu);
+            Matrix<T> activeBlock = A.sliceByRows(0, m).sliceByCols(0, m);
+            Matrix<T> shifted = activeBlock - (identity(m) * T(mu));
+            QRResult<T> qr = shifted.QRDecomp();
+            Matrix<T> newBlock = (qr.R * qr.Q) + (identity(m) * T(mu));
 
             for (u32 i = 0; i < m; ++i) {
                 for (u32 j = 0; j < m; ++j) {
@@ -500,7 +575,7 @@ EigenResult Matrix::symmetricEigenQR(u32 maxIter, d64 tol) const {
                 }
             }
 
-            Matrix Qpad = identity(n);
+            Matrix<T> Qpad = identity(n);
             for (u32 i = 0; i < m; ++i) {
                 for (u32 j = 0; j < m; ++j) {
                     Qpad(i, j) = qr.Q(i, j);
@@ -509,12 +584,12 @@ EigenResult Matrix::symmetricEigenQR(u32 maxIter, d64 tol) const {
 
             eigenvectors = eigenvectors * Qpad;
 
-            if (std::fabs(A(m - 1, m - 2)) < tol) {
+            if (std::abs(A(m - 1, m - 2)) < tol) {
                 break;
             }
         }
 
-        eigenvalues[m - 1] = A(m - 1, m - 1);
+        eigenvalues[m - 1] = std::real(A(m - 1, m - 1));
         --m;
     }
 
@@ -523,12 +598,13 @@ EigenResult Matrix::symmetricEigenQR(u32 maxIter, d64 tol) const {
     return {std::move(eigenvalues), std::move(eigenvectors)};
 }
 
-d64 Matrix::trace() const {
+template <Scalar T>
+T Matrix<T>::trace() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have a trace");
     }
 
-    d64 tr = 0.0;
+    T tr = 0.0;
     for (u32 i = 0; i < rows_; ++i) {
         tr += data_[linearIndex(i, i)];
     }
@@ -536,12 +612,13 @@ d64 Matrix::trace() const {
     return tr;
 }
 
-d64 Matrix::diagProduct() const {
+template <Scalar T>
+T Matrix<T>::diagProduct() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have a main diagonal");
     }
 
-    d64 prod = 1.0;
+    T prod = 1.0;
     for (u32 i = 0; i < rows_; ++i) {
         prod *= data_[linearIndex(i, i)];
     }
@@ -549,12 +626,13 @@ d64 Matrix::diagProduct() const {
     return prod;
 }
 
-std::vector<d64> Matrix::getDiag() const {
+template <Scalar T>
+std::vector<T> Matrix<T>::getDiag() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("no diagonal for non-square matrix");
     }
 
-    std::vector<d64> diag;
+    std::vector<T> diag;
     diag.reserve(rows_);
 
     for (u32 i = 0; i < rows_; ++i) {
@@ -564,11 +642,12 @@ std::vector<d64> Matrix::getDiag() const {
     return diag;
 }
 
-Matrix Matrix::getLower() const {
+template <Scalar T>
+Matrix<T> Matrix<T>::getLower() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("needs to be square matrix to have defined main diagonal");
     }
-    Matrix lower(rows_, cols_, 0.0);
+    Matrix<T> lower(rows_, cols_, 0.0);
 
     for (u32 i = 0; i < rows_; ++i) { 
         for (u32 j = 0; j < i; ++j) {
@@ -579,11 +658,12 @@ Matrix Matrix::getLower() const {
     return lower;
 }
 
-Matrix Matrix::getUpper() const {
+template <Scalar T>
+Matrix<T> Matrix<T>::getUpper() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("needs to be square matrix to have defined main diagonal");
     }
-    Matrix upper(rows_, cols_, 0.0);
+    Matrix<T> upper(rows_, cols_, 0.0);
     for (u32 i = 0; i < rows_; ++i) {
         for (u32 j = i + 1; j < cols_; ++j) {
             upper(i, j) = data_[linearIndex(i, j)];
@@ -593,35 +673,37 @@ Matrix Matrix::getUpper() const {
     return upper;
 }
 
-Matrix Matrix::cofactorInversion() const {
-    d64 det = (*this).determinant();
+template <Scalar T>
+Matrix<T> Matrix<T>::cofactorInversion() const {
+    T det = (*this).determinant();
     if (rows_ != cols_) {
         throw std::invalid_argument("Cannot invert rectangular matrix");
     }
-    if (std::fabs(det) < kDefaultAbsTol) {
+    if (std::abs(det) < kDefaultAbsTol) {
         throw std::invalid_argument("Cannot invert singular matrix");
     }
     return (*this).getCofactorMatrix().transpose() / det;
 }
 
-Matrix Matrix::inverse() const {
+template <Scalar T>
+Matrix<T> Matrix<T>::inverse() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("Cannot invert rectangular matrix");
     }
 
     const u32 n = rows_;
 
-    Matrix A = *this;
-    Matrix I = identity(n);
+    Matrix<T> A = *this;
+    Matrix<T> I = identity(n);
 
-    const d64 tolerance = std::numeric_limits<d64>::epsilon() * kSingularPivotTol;
+    const RealType<T> tolerance = std::numeric_limits<RealType<T>>::epsilon() * kSingularPivotTol;
 
     for (u32 j = 0; j < n; ++j) {
         u32 pivot_row = j;
-        d64 maxVal = std::fabs(A(j, j));
+        RealType<T> maxVal = std::abs(A(j, j));
         for(u32 i = j + 1; i < n; ++i) {
-            if (std::fabs(A(i, j)) > maxVal) {
-                maxVal = std::fabs(A(i, j));
+            if (std::abs(A(i, j)) > maxVal) {
+                maxVal = std::abs(A(i, j));
                 pivot_row = i;
             }
         }
@@ -633,7 +715,7 @@ Matrix Matrix::inverse() const {
         A.swapRows(j, pivot_row);
         I.swapRows(j, pivot_row);
 
-        d64 pivot = A(j, j);
+        T pivot = A(j, j);
 
         for (u32 i = 0; i < n; ++i) {
             A(j, i) /= pivot;
@@ -642,7 +724,7 @@ Matrix Matrix::inverse() const {
 
         for (u32 i = 0; i < n; ++i) {
             if (i == j) continue;
-            d64 factor = A(i, j);
+            T factor = A(i, j);
             for (u32 col = 0; col < n; ++col) {
                 A(i, col) -= factor * A(j, col);
                 I(i, col) -= factor * I(j, col);
@@ -653,59 +735,66 @@ Matrix Matrix::inverse() const {
     return I;
 }
 
-Matrix Matrix::operator+(const Matrix& other) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::operator+(const Matrix<T>& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("Shape mismatch");
     }
-    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::plus<d64>()));
+    return Matrix<T>(rows_, cols_, detail::elementWise(data_, other.data_, std::plus<T>()));
 }
 
-Matrix& Matrix::operator+=(const Matrix& other) {
+template <Scalar T>
+Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& other) {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    detail::elementWiseInPlace(data_, other.data_, std::plus<d64>());
+    detail::elementWiseInPlace(data_, other.data_, std::plus<T>());
 
     return *this;
 }
 
-Matrix Matrix::operator-(const Matrix& other) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::operator-(const Matrix<T>& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("Shape mismatch");
     }
-        return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::minus<d64>()));
+        return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::minus<T>()));
 }
 
-Matrix& Matrix::operator-=(const Matrix& other) {
+template <Scalar T>
+Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& other) {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    detail::elementWiseInPlace(data_, other.data_, std::minus<d64>());
+    detail::elementWiseInPlace(data_, other.data_, std::minus<T>());
 
     return *this;
 }
 
-Matrix Matrix::hadamard(const Matrix& other) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::hadamard(const Matrix<T>& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::multiplies<d64>()));
+    return Matrix(rows_, cols_, detail::elementWise(data_, other.data_, std::multiplies<T>()));
 }
 
-Matrix& Matrix::hadamardInPlace(const Matrix& other) {
+template <Scalar T>
+Matrix<T>& Matrix<T>::hadamardInPlace(const Matrix<T>& other) {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    detail::elementWiseInPlace(data_, other.data_, std::multiplies<d64>());
+    detail::elementWiseInPlace(data_, other.data_, std::multiplies<T>());
 
     return *this;
 }
 
-Matrix Matrix::sliceByRows(u32 start, u32 finish) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::sliceByRows(u32 start, u32 finish) const {
     if (start >= finish) {
         throw std::invalid_argument("finish must be greater than start");
     }
@@ -715,7 +804,7 @@ Matrix Matrix::sliceByRows(u32 start, u32 finish) const {
 
     u32 new_rows = finish - start;
 
-    Matrix result(new_rows, cols_);
+    Matrix<T> result(new_rows, cols_);
 
     for (u32 i = start; i < finish; ++i) {
         for (u32 j = 0; j < cols_; ++j) {
@@ -726,7 +815,8 @@ Matrix Matrix::sliceByRows(u32 start, u32 finish) const {
     return result;
 }
 
-Matrix Matrix::sliceByCols(u32 start, u32 finish) const {
+template <Scalar T>
+Matrix<T> Matrix<T>::sliceByCols(u32 start, u32 finish) const {
     if (start >= finish) {
         throw std::invalid_argument("finish must be greater than start");
     }
@@ -736,7 +826,7 @@ Matrix Matrix::sliceByCols(u32 start, u32 finish) const {
 
     u32 new_cols = finish - start;
 
-    Matrix result(rows_, new_cols);
+    Matrix<T> result(rows_, new_cols);
 
     for (u32 i = 0; i < rows_; ++i) {
         for (u32 j = start; j < finish; ++ j) {
@@ -747,12 +837,13 @@ Matrix Matrix::sliceByCols(u32 start, u32 finish) const {
     return result;
 }
 
-std::pair<d64, Vec> Matrix::largestEigenPair(u32 power) const {
+template <Scalar T>
+std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::largestEigenPair(u32 power) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
 
-    Vec v = Vec::random(rows_);
+    Vec<RealType<T>> v = Vec<T>::random(rows_);
 
     for (u32 i = 0; i < power; ++i) {
         v = (*this) * v;
@@ -760,40 +851,42 @@ std::pair<d64, Vec> Matrix::largestEigenPair(u32 power) const {
     }
 
     v.normalize(); // normalized eigenvector
-    d64 eigenVal = v.dot(((*this) * v));
+    RealType<T> eigenVal = v.dot(((*this) * v));
 
     return {eigenVal, v};
 }
 
-std::pair<d64, Vec> Matrix::smallestEigenPair(u32 power) const {
+template <Scalar T>
+std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::smallestEigenPair(u32 power) const {
     if (rows_ != cols_){
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
 
-    Vec v = Vec::random(rows_);
+    Vec<RealType<T>> v = Vec<T>::random(rows_);
 
-    LUResult A_res = LUDecomp();
+    LUResult<T> A_res = LUDecomp();
 
-    for (u32 i =0; i < power; ++i) {
+    for (u32 i = 0; i < power; ++i) {
         v = solve::lu(A_res, v);
         v.normalize();
     }
 
     v.normalize();
-    d64 eigenVal = 1.0 / v.dot(solve::lu(A_res, v));
+    RealType<T> eigenVal = 1.0 / v.dot(solve::lu(A_res, v));
 
     return {eigenVal, v};
 }
 
-std::pair<d64, Vec> Matrix::eigenPairClosestTo(d64 alpha, u32 power) const {
+template <Scalar T>
+std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::eigenPairClosestTo(RealType<T> alpha, u32 power) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
 
-    Matrix A_prime = (*this) - (identity(rows_) * alpha);
-    LUResult A_prime_res = A_prime.LUDecomp();
+    Matrix<T> A_prime = (*this) - (identity(rows_) * alpha);
+    LUResult<T> A_prime_res = A_prime.LUDecomp();
 
-    Vec v = Vec::random(rows_);
+    Vec<RealType<T>> v = Vec<T>::random(rows_);
     
     for (u32 i = 0; i < power; ++i) {
         v = solve::lu(A_prime_res, v);
@@ -801,19 +894,21 @@ std::pair<d64, Vec> Matrix::eigenPairClosestTo(d64 alpha, u32 power) const {
     }
 
     v.normalize();
-    d64 eigenVal = alpha + 1.0 / v.dot(solve::lu(A_prime_res, v));
+    RealType<T> eigenVal = alpha + 1.0 / v.dot(solve::lu(A_prime_res, v));
     
     return {eigenVal, v};
 }
 
-d64 Matrix::sumElements() const {
+template <Scalar T>
+T Matrix<T>::sumElements() const {
     return detail::sumElements(data_);
 }
 
 // axis = 0 means sum up each column, leaving a row vector
 // axis = 1 means sum up each row, leaving a column vector
-Matrix Matrix::sum(u32 axis) const {
-    Matrix result = axis ==0 ? Matrix(1, (*this).cols_) : Matrix(((*this).rows_), 1);
+template <Scalar T>
+Matrix<T> Matrix<T>::sum(u32 axis) const {
+    Matrix<T> result = axis == 0 ? Matrix<T>(1, (*this).cols_) : Matrix<T>(((*this).rows_), 1);
 
     if (!axis) {
         for (u32 j = 0; j < cols_; ++j) {
@@ -832,7 +927,8 @@ Matrix Matrix::sum(u32 axis) const {
     return result;
 }
 
-Matrix& Matrix::matmulInto(const Matrix& other, Matrix& out) const {
+template <Scalar T>
+Matrix<T>& Matrix<T>::matmulInto(const Matrix<T>& other, Matrix<T>& out) const {
     if (cols_ != other.rows_)
         throw std::invalid_argument("matmul dimension mismatch");
     if (rows_ != out.rows_ || other.cols_ != out.cols_)
@@ -844,7 +940,7 @@ Matrix& Matrix::matmulInto(const Matrix& other, Matrix& out) const {
     
     for (u32 i = 0; i < m; ++i) {
         for (u32 j = 0; j < n; ++j) {
-            d64 sum = 0.0;
+            T sum = 0.0;
             for (u32 p = 0; p < k; ++p) {
                 sum += data_[i * cols_ + p] * other.data_[p * other.cols_ + j];
             }
@@ -855,30 +951,50 @@ Matrix& Matrix::matmulInto(const Matrix& other, Matrix& out) const {
     return out;
 }
 
-d64 Matrix::max() const {
+template <Scalar T>
+RealType<T> Matrix<T>::max() const {
     return detail::maxElement(data_);
 }
 
 
-d64 Matrix::min() const {
+template <Scalar T>
+RealType<T> Matrix<T>::min() const {
     return detail::minElement(data_);
 }
 
-std::ostream& operator<<(std::ostream& os, const Matrix& m) {
-    for (u32 i = 0; i < m.rows(); ++i) {
-        u32 count = 0;
-        for (u32 j = 0; j < m.cols(); ++j) {
-            if (count == m.cols() - 1) {
-                os << m(i, j) << std::endl;
-            } else {
-                os << m(i, j) << ", ";
-            }
+template <Scalar T>
+std::ostream& operator<<(std::ostream& os, const Matrix<T>& m) {
+    if constexpr (is_complex_v<T>) {
+        for (u32 i = 0; i < m.rows(); ++i) {
+            u32 count = 0;
+            for (u32 j = 0; j < m.cols(); ++j) {
+                if (count == m.cols() - 1) {
+                    os << m(i, j).real() << "+" << m(i, j).imag() << "i" << std::endl;
+                } else {
+                    os << m(i, j).real() << "+" << m(i, j).imag() << "i, ";
+                }
 
-            ++count;
+                ++count;
+            }
+        } 
+    }
+    else {
+        for (u32 i = 0; i < m.rows(); ++i) {
+            u32 count = 0;
+            for (u32 j = 0; j < m.cols(); ++j) {
+                if (count == m.cols() - 1) {
+                    os << m(i, j) << std::endl;
+                } else {
+                    os << m(i, j) << ", ";
+                }
+
+                ++count;
+            }
         }
     }
 
     return os;
-}
 
-} // namespace linalg
+} 
+
+}// namespace linalg

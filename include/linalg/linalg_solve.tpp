@@ -1,14 +1,14 @@
 #include "linalg/matrix.hpp"
 #include "linalg/vec.hpp"
 #include "linalg/linalg_interop.hpp"
-#include "linalg/linalg_solve.hpp"
 #include <stdexcept>
 
 namespace linalg {
 
 namespace solve {
 
-    Vec forwardSub(const Matrix& lt, const Vec& rhs) {
+    template <Scalar T>
+    Vec<T> forwardSub(const Matrix<T>& lt, const Vec<T>& rhs) {
         // undefined behavior for a non lower triangular matrix
 
         u32 n = rhs.size();
@@ -20,10 +20,10 @@ namespace solve {
             throw std::invalid_argument("matrix must be square");
         }
 
-        Vec x(n); // solution vector
+        Vec<T> x(n); // solution vector
 
         for(u32 i = 0; i < n; ++i) {
-            d64 sum = rhs(i);
+            T sum = rhs(i);
             for (u32 j = 0; j < i; ++j) {
                 sum -= lt(i, j) * x(j);
             }
@@ -32,8 +32,9 @@ namespace solve {
 
         return x;
     }
-
-    Vec backSub(const Matrix& ut, const Vec& rhs) {
+    
+    template <Scalar T>
+    Vec<T> backSub(const Matrix<T>& ut, const Vec<T>& rhs) {
         // undefined behavior for a non upper triangular matrix
 
         u32 n = rhs.size();
@@ -45,10 +46,10 @@ namespace solve {
             throw std::invalid_argument("matrix must be square");
         }
 
-        Vec x(n); // solution vector
+        Vec<T> x(n); // solution vector
 
         for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
-            d64 sum = rhs(i);
+            T sum = rhs(i);
             for (int j = i + 1; j < static_cast<int>(n); ++j) {
                 sum -= ut(i, j) * x(j);
             }
@@ -58,28 +59,30 @@ namespace solve {
         return x;
     }
 
-    Vec lu(const LUResult& f, const Vec& b) {
+    template <Scalar T>
+    Vec<T> lu(const LUResult<T>& f, const Vec<T>& b) {
         u32 n = b.size();
 
-        const Matrix& L = f.L;
-        const Matrix& U = f.U;
-        const Matrix& P = f.P;
+        const Matrix<T>& L = f.L;
+        const Matrix<T>& U = f.U;
+        const Matrix<T>& P = f.P;
 
         if (L.cols() != n) {
             throw std::invalid_argument("shape mismatch");
         }
 
-        Vec b_prime = P * b;
+        Vec<T> b_prime = P * b;
 
-        Vec y = forwardSub(L, b_prime);
+        Vec<T> y = forwardSub(L, b_prime);
 
-        Vec x = backSub(U, y);
+        Vec<T> x = backSub(U, y);
 
         return x;
     }
 
-    std::vector<Vec> lu(const LUResult& f, const std::vector<Vec>& bs) {
-        std::vector<Vec> solutions;
+    template <Scalar T>
+    std::vector<Vec<T>> lu(const LUResult<T>& f, const std::vector<Vec<T>>& bs) {
+        std::vector<Vec<T>> solutions;
         solutions.reserve(bs.size());
 
         for (auto& b : bs) {
@@ -89,40 +92,43 @@ namespace solve {
         return solutions;
     }
 
-    Vec lu(const Matrix& A, const Vec& b) {
-        LUResult res = A.LUDecomp(); 
+    template <Scalar T>
+    Vec<T> lu(const Matrix<T>& A, const Vec<T>& b) {
+        LUResult<T> res = A.LUDecomp(); 
         return lu(res, b);
     }
 
-    std::vector<Vec> lu(const Matrix& A, const std::vector<Vec>& bs) {
-        LUResult res = A.LUDecomp();
+    template <Scalar T>
+    std::vector<Vec<T>> lu(const Matrix<T>& A, const std::vector<Vec<T>>& bs) {
+        LUResult<T> res = A.LUDecomp();
         return lu(res, bs);
     }
 
-    IterResult runSplitIteration(const Matrix& A, const Vec& b, const Matrix& B, const Matrix& S,
-            const solveFn& solve, IterStoppingCondition sc, const u32 maxIter) {
-        Vec xi = solve(B, b);
+    template <Scalar T>
+    IterResult<T> runSplitIteration(const Matrix<T>& A, const Vec<T>& b, const Matrix<T>& B, const Matrix<T>& S,
+            const solveFn<T>& solve, IterStoppingCondition<T> sc, const u32 maxIter) {
+        Vec<T> xi = solve(B, b);
 
-        d64 l = sc.lnorm_ord;
-        IterResult result;
+        RealType<T> l = sc.lnorm_ord;
+        IterResult<T> result;
         result.lnorm_ord = l;
         result.errType = sc.errType;
 
-        d64 bNorm = b.lnorm(l);
+        RealType<T> bNorm = b.lnorm(l);
 
         bool iterate = true;
         bool converged = false;
         u32 numIter = 0;
-        Vec lastResidual;
+        Vec<T> lastResidual;
 
         while (iterate) {
-            Vec rhs = b - S * xi;
-            Vec x_ip1 = solve(B, rhs);
+            Vec<T> rhs = b - S * xi;
+            Vec<T> x_ip1 = solve(B, rhs);
 
-            d64 err;
+            RealType<T> err;
             if (sc.errType == errorType::Fractional) {
-                Vec diff = x_ip1 - xi;
-                d64 denom = xi.lnorm(l);
+                Vec<T> diff = x_ip1 - xi;
+                RealType<T> denom = xi.lnorm(l);
                 err = (denom > kDefaultAbsTol) ? diff.lnorm(l) / denom : diff.lnorm(l);
             } else {
                 lastResidual = A * x_ip1 - b;
@@ -146,18 +152,19 @@ namespace solve {
         return result;
     }
 
-    IterResult jacobi(const Matrix& A, const Vec& b, IterStoppingCondition sc, const u32 maxIter) {
-        std::vector<d64> ADiag = A.getDiag();
-        for (d64 x : ADiag) {
-            if (std::fabs(x) < kDefaultAbsTol) {
-                throw std::invalid_argument("cannot do jacob iteration with matrix that has a zero diagonal element");
+    template <Scalar T>
+    IterResult<T> jacobi(const Matrix<T>& A, const Vec<T>& b, IterStoppingCondition<T> sc, const u32 maxIter) {
+        std::vector<T> ADiag = A.getDiag();
+        for (T x : ADiag) {
+            if (std::abs(x) < kDefaultAbsTol) {
+                throw std::invalid_argument("cannot do jacobi iteration with matrix that has a zero diagonal element");
             }
         }
-        Matrix B = Matrix::diagonal(ADiag);
-        Matrix S = A - B;
+        Matrix<T> B = Matrix<T>::diagonal(ADiag);
+        Matrix<T> S = A - B;
 
-        solveFn diagSolve = [](const Matrix& B, const Vec& rhs) {
-            Vec y(rhs.size());
+        solveFn<T> diagSolve = [](const Matrix<T>& B, const Vec<T>& rhs) {
+            Vec<T> y(rhs.size());
             for (u32 i = 0; i < rhs.size(); ++i) {
                 y(i) = rhs(i) / B(i, i);
             }
@@ -167,25 +174,27 @@ namespace solve {
         return runSplitIteration(A, b, B, S, diagSolve, sc, maxIter);
     }
 
-    IterResult sor(const Matrix& A, const Vec& b, const d64 w, IterStoppingCondition sc,
+    template <Scalar T>
+    IterResult<T> sor(const Matrix<T>& A, const Vec<T>& b, const RealType<T> w, IterStoppingCondition<T> sc,
         const u32 maxIter, SplitType split) {
         if (w <= 0 || w > 2) {
             throw std::invalid_argument("sor requires a relaxation parameter in (0, 2]");
         }
-        d64 alpha = 1.0 / w;
-        Matrix D = Matrix::diagonal(A.getDiag());
-        Matrix B = (split == SplitType::Lower) ? A.getLower() + D * alpha : A.getUpper() + D * alpha;
+        RealType<T> alpha = 1.0 / w;
+        Matrix<T> D = Matrix<T>::diagonal(A.getDiag());
+        Matrix<T> B = (split == SplitType::Lower) ? A.getLower() + D * alpha : A.getUpper() + D * alpha;
 
-        Matrix S = A - B;
+        Matrix<T> S = A - B;
 
-        solveFn triSolve = (split == SplitType::Lower) 
-            ? solveFn([](const Matrix& B, const Vec& rhs) {return forwardSub(B, rhs);})
-            : solveFn([](const Matrix& B, const Vec& rhs) {return backSub(B, rhs);});
+        solveFn<T> triSolve = (split == SplitType::Lower) 
+            ? solveFn<T>([](const Matrix<T>& B, const Vec<T>& rhs) {return forwardSub(B, rhs);})
+            : solveFn<T>([](const Matrix<T>& B, const Vec<T>& rhs) {return backSub(B, rhs);});
 
         return runSplitIteration(A, b, B, S, triSolve, sc, maxIter);
     }
 
-    IterResult gaussSeidel(const Matrix& A, const Vec& b, IterStoppingCondition sc, 
+    template <Scalar T>
+    IterResult<T> gaussSeidel(const Matrix<T>& A, const Vec<T>& b, IterStoppingCondition<T> sc, 
         const u32 maxIter, SplitType split) {
         return sor(A, b, 1.0, sc, maxIter, split);
     }

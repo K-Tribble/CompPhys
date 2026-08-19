@@ -7,9 +7,14 @@
 
 namespace linalg{
 
-Vec operator*(const Matrix& m, const Vec& v); // treats v as a column vector
-Vec operator*(const Vec& v, const Matrix& m); // treats v as a row vector
+template <Scalar T>
+Vec<T> operator*(const Matrix<T>& m, const Vec<T>& v); // treats v as a column vector
+
+template <Scalar T>
+Vec<T> operator*(const Vec<T>& v, const Matrix<T>& m); // treats v as a row vector
 
 } // namespace linalg
+
+#include "linalg/linalg_interop.tpp"
 
 

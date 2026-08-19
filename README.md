@@ -58,7 +58,7 @@ This project contains implementations developed while studying the Computational
 - Customizable step size parameter
 
 **Numerical Integration** (`calculus/integration.hpp`)
-- Trapezoidal rule with adaptive refinement
+- Trapezoidal and Simpsons rule with adaptive refinement
 - Automatic convergence detection based on Richardson extrapolation
 - Configurable stopping conditions and iteration limits
 - Convergence tracking with error estimation
@@ -391,8 +391,9 @@ Tests are located in the `tests/` directory and validate correctness of implemen
 ### Integration Methods
 - **Trapezoidal Rule** - simple linear approximation between points
   - Adaptive refinement automatically increases accuracy
+  - Has O(h^2) accuracy
 - **Simpsons Rule** - quadratic interpolation between points
-  - Uses Richardson extrapolation on trapezoidal rule to gain O(h^2) error
+  - Uses Richardson extrapolation on trapezoidal rule to gain O(h^4) error
   - Adaptive refinement automatically increases accuracy
 
 ### Root Finding

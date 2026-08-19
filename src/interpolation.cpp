@@ -98,8 +98,8 @@ CubicSplineResult cubicSpline(std::span<const d64> x, std::span<const d64> yKnow
 
     u32 n = x.size();
 
-    linalg::Matrix A(n, n);
-    linalg::Vec rhs(n);
+    linalg::Matrix<d64> A(n, n);
+    linalg::Vec<d64> rhs(n);
 
     // Set boundary conditions
     rhs(n - 1) = rightBC;
@@ -117,9 +117,9 @@ CubicSplineResult cubicSpline(std::span<const d64> x, std::span<const d64> yKnow
         A(i, i + 1) = (x[i + 1] - x[i]) / 6;
     }
 
-    linalg::Vec secondDerivs = linalg::solve::lu(A, rhs); // solve for second derivatives by lu decomposition
+    linalg::Vec<d64> secondDerivs = linalg::solve::lu(A, rhs); // solve for second derivatives by lu decomposition
 
-    linalg::Matrix coeffs(4, n - 1);
+    linalg::Matrix<d64> coeffs(4, n - 1);
 
     for (u32 i = 0; i < n - 1; ++i) {
         d64 hi = x[i + 1] - x[i];

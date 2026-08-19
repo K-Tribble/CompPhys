@@ -4,14 +4,15 @@
 
 namespace linalg {
 
-Vec operator*(const Matrix& m, const Vec& v) {
+template <Scalar T>
+Vec<T> operator*(const Matrix<T>& m, const Vec<T>& v) {
     if (m.cols() != v.size()) {
         throw std::invalid_argument("shape mismatch");
     }
     
-    Vec product(m.rows());
+    Vec<T> product(m.rows());
 
-    std::vector<Vec> rows = m.getRows();
+    std::vector<Vec<T>> rows = m.getRows();
 
     for (u32 i = 0; i < rows.size(); ++i) {
         product(i) = rows[i].dot(v);
@@ -20,14 +21,15 @@ Vec operator*(const Matrix& m, const Vec& v) {
     return product;
 }
 
-Vec operator*(const Vec& v, const Matrix& m) {
+template <Scalar T>
+Vec<T> operator*(const Vec<T>& v, const Matrix<T>& m) {
     if (v.size() != m.rows()) {
         throw std::invalid_argument("shape mismatch");
     }
 
-    Vec product(m.cols());
+    Vec<T> product(m.cols());
 
-    std::vector<Vec> cols = m.getCols();
+    std::vector<Vec<T>> cols = m.getCols();
 
     for (u32 j = 0; j < cols.size(); ++j) {
         product(j) = v.dot(cols[j]);
