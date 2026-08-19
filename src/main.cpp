@@ -329,12 +329,11 @@ int main() {
 
     Matrix<d64> testEig{{2, 1}, {1, 2}};
 
-    EigenResult<d64> eres = testEig.symmetricEigenQR();
+    EigenResult<d64> eres = testEig.hermitianEigenQR();
     d64 sumEig = 0.0;
     for (auto& v : eres.eigenvalues) sumEig += v;
     Matrix<d64> D = Matrix<d64>::diagonal(eres.eigenvalues);
     std::cout << D;
-
 
     std::cout << testEig.trace() << "\n" << sumEig << std::endl;
 }

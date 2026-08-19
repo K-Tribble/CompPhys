@@ -37,8 +37,8 @@ namespace linalg {
         inline bool approxEqual(const std::vector<T>& a, const std::vector<T>& b, RealType<T> absTol, RealType<T> relTol) {
             if (a.size() != b.size()) return false;
             for (u32 i = 0; i < a.size(); ++i) {
-                T diff = std::abs(a[i] - b[i]);
-                T largest = std::max(std::abs(a[i]), std::abs(b[i]));
+                RealType<T> diff = std::abs(a[i] - b[i]);
+                RealType<T> largest = std::max(std::abs(a[i]), std::abs(b[i]));
                 if (diff > std::max(absTol, relTol * largest)) return false;
             }
             return true;
@@ -51,7 +51,7 @@ namespace linalg {
 
         template <Scalar T>
         inline T sumElements(const std::vector<T>& a) {
-            d64 s = 0;
+            T s = T{};
             for (auto v : a) {
                 s += v;
             }
@@ -63,7 +63,7 @@ namespace linalg {
         inline RealType<T> maxElement(const std::vector<T>& a) {
             std::vector<RealType<T>> mags;
             mags.reserve(a.size());
-            for (T& val : a) {mags.emplace_back(std::abs(val));}
+            for (T val : a) {mags.emplace_back(std::abs(val));}
             return *std::max_element(mags.begin(), mags.end());
         }
 
@@ -72,7 +72,7 @@ namespace linalg {
         inline RealType<T> minElement(const std::vector<T>& a) {
             std::vector<RealType<T>> mags;
             mags.reserve(a.size());
-            for (T& val : a) {mags.emplace_back(std::abs(val));}
+            for (T val : a) {mags.emplace_back(std::abs(val));}
             return *std::min_element(mags.begin(), mags.end());
         }
     } // namespace detail

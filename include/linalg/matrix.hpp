@@ -96,7 +96,7 @@ public:
     // perform QR decomposition of the matrix with hosueholder reflections
     QRResult<T> QRDecomp() const;
     // get eigenvalues and eigenvectors of a symmetric matrix
-    EigenResult<T> symmetricEigenQR(u32 maxIter = 1000, RealType<T> tol = kDefaultAbsTol) const;
+    EigenResult<T> hermitianEigenQR(u32 maxIter = 1000, RealType<T> tol = kDefaultAbsTol) const;
 
     T trace() const;
     // product of diagonal elements
@@ -113,11 +113,11 @@ public:
 
     // The following methdos only find the largest modulus real eigenvalue and its associated real eigenvector
     // returns the eigenvalue with the largest modulus and its associated normalized eigenvector
-    std::pair<RealType<T>, Vec<RealType<T>>> largestEigenPair(u32 power = 50) const;
+    std::pair<RealType<T>, Vec<T>> largestEigenPair(u32 power = 50) const;
     // returns the eigenvalue with the smalles modulus and its associated normalized eigenvector
-    std::pair<RealType<T>, Vec<RealType<T>>> smallestEigenPair(u32 power = 50) const;
+    std::pair<RealType<T>, Vec<T>> smallestEigenPair(u32 power = 50) const;
     // Returns the eigenvalue closest to a value alpha and its associated normalized eigenvector
-    std::pair<RealType<T>, Vec<RealType<T>>> eigenPairClosestTo(RealType<T> alpha, u32 power = 50) const;
+    std::pair<RealType<T>, Vec<T>> eigenPairClosestTo(RealType<T> alpha, u32 power = 50) const;
 
     T sumElements() const;
 

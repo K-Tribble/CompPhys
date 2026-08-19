@@ -163,7 +163,7 @@ Matrix<T> Vec<T>::outer(const Vec<T>& v) const {
 
 template <Scalar T>
 RealType<T> Vec<T>::normSquared() const {
-    return inner(*this); 
+    return std::real(inner(*this)); 
 }
 template <Scalar T>
 RealType<T> Vec<T>::norm() const {
@@ -243,7 +243,7 @@ std::ostream& operator<<(std::ostream& os, const Vec<T>& v) {
             if (i == 0) {
                 os << "(" << v(i).real() << "+" << v(i).imag() << "i, ";
             } else if (i == v.size() - 1) {
-                os << v(i).real() << "+" << v(i).imag << "i)" << std::endl;
+                os << v(i).real() << "+" << v(i).imag() << "i)" << std::endl;
             } else {
                 os << v(i).real() << "+" << v(i).imag() << "i, ";
             }

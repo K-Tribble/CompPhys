@@ -435,9 +435,9 @@ LUResult<T> Matrix<T>::LUDecomp() const {
 
     for (u32 i = 0; i < n; ++i) {
         u32 pivotRow = i;
-        T pivotVal = std::abs(A(i, i));
+        RealType<T> pivotVal = std::abs(A(i, i));
         for (u32 k = i + 1; k < n; ++k) {
-            T v = std::abs(A(k, i));
+            RealType<T> v = std::abs(A(k, i));
             if (v > pivotVal) {
                 pivotVal = v;
                 pivotRow = k;
@@ -522,17 +522,17 @@ QRResult<T> Matrix<T>::QRDecomp() const {
         if (v_norm < kDefaultAbsTol) continue;
 
         v.normalize();
-        Matrix<T> Qn_prepad = identity(rows_ - i) - (v.outer(v.conj_inplace()) * T(2.0));
+        Matrix<T> Qn_prepad = identity(rows_ - i) - (v.outer(v.conj()) * T(2.0));
         Matrix<T> Qn = padMatrix(Qn_prepad, rows_);
         R = Qn * R;
-        Q = Q * Qn.transpose();
+        Q = Q * Qn.adjoint();
     }
 
     return {std::move(Q), std::move(R)};
 }
 
 template <Scalar T>
-EigenResult<T> Matrix<T>::symmetricEigenQR(u32 maxIter, RealType<T> tol) const {
+EigenResult<T> Matrix<T>::hermitianEigenQR(u32 maxIter, RealType<T> tol) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
@@ -551,9 +551,9 @@ EigenResult<T> Matrix<T>::symmetricEigenQR(u32 maxIter, RealType<T> tol) const {
         for (u32 iter = 0; iter < maxIter; ++iter) {
             // Wilkonsin shift from the trailing 2x2 block of active mxm submatrix
             RealType<T> a = std::real(A(m - 2, m - 2));
-            T b = A(m - 2, m - 2);
+            T b = A(m - 2, m - 1);
             RealType<T> b_abs_sq = std::norm(b);
-            RealType<T> d = A(m - 1, m - 1);
+            RealType<T> d = std::real(A(m - 1, m - 1));
 
             RealType<T> delta = (a - d) / 2.0;
             RealType<T> mu;
@@ -561,7 +561,7 @@ EigenResult<T> Matrix<T>::symmetricEigenQR(u32 maxIter, RealType<T> tol) const {
                 mu = d;
             } else {
                 RealType<T> sign = (delta >= 0.0) ? 1.0 : -1.0;
-                mu = d - (sign * b * b) / (std::abs(delta) + std::sqrt(delta * delta + b_abs_sq)); 
+                mu = d - (sign * b_abs_sq) / (std::abs(delta) + std::sqrt(delta * delta + b_abs_sq)); 
             }
 
             Matrix<T> activeBlock = A.sliceByRows(0, m).sliceByCols(0, m);
@@ -593,7 +593,7 @@ EigenResult<T> Matrix<T>::symmetricEigenQR(u32 maxIter, RealType<T> tol) const {
         --m;
     }
 
-    eigenvalues[0] = A(0, 0);
+    eigenvalues[0] = std::real(A(0, 0));
 
     return {std::move(eigenvalues), std::move(eigenvectors)};
 }
@@ -838,7 +838,7 @@ Matrix<T> Matrix<T>::sliceByCols(u32 start, u32 finish) const {
 }
 
 template <Scalar T>
-std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::largestEigenPair(u32 power) const {
+std::pair<RealType<T>, Vec<T>> Matrix<T>::largestEigenPair(u32 power) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
@@ -851,13 +851,13 @@ std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::largestEigenPair(u32 power) 
     }
 
     v.normalize(); // normalized eigenvector
-    RealType<T> eigenVal = v.dot(((*this) * v));
+    RealType<T> eigenVal = v.inner(((*this) * v));
 
     return {eigenVal, v};
 }
 
 template <Scalar T>
-std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::smallestEigenPair(u32 power) const {
+std::pair<RealType<T>, Vec<T>> Matrix<T>::smallestEigenPair(u32 power) const {
     if (rows_ != cols_){
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
@@ -872,13 +872,13 @@ std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::smallestEigenPair(u32 power)
     }
 
     v.normalize();
-    RealType<T> eigenVal = 1.0 / v.dot(solve::lu(A_res, v));
+    RealType<T> eigenVal = 1.0 / v.inner(solve::lu(A_res, v));
 
     return {eigenVal, v};
 }
 
 template <Scalar T>
-std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::eigenPairClosestTo(RealType<T> alpha, u32 power) const {
+std::pair<RealType<T>, Vec<T>> Matrix<T>::eigenPairClosestTo(RealType<T> alpha, u32 power) const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
@@ -894,7 +894,7 @@ std::pair<RealType<T>, Vec<RealType<T>>> Matrix<T>::eigenPairClosestTo(RealType<
     }
 
     v.normalize();
-    RealType<T> eigenVal = alpha + 1.0 / v.dot(solve::lu(A_prime_res, v));
+    RealType<T> eigenVal = alpha + 1.0 / v.inner(solve::lu(A_prime_res, v));
     
     return {eigenVal, v};
 }
