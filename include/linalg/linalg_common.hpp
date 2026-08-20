@@ -58,22 +58,31 @@ namespace linalg {
             return s;
         }
 
-        // returns element with max absolute value
+        // returns element with max absolute value, returns the element itself not the absolute value
+        // eg for v = {1, -7, 4} it will return -7
         template <Scalar T>
-        inline RealType<T> maxElement(const std::vector<T>& a) {
-            std::vector<RealType<T>> mags;
-            mags.reserve(a.size());
-            for (T val : a) {mags.emplace_back(std::abs(val));}
-            return *std::max_element(mags.begin(), mags.end());
+        inline T maxElement(const std::vector<T>& a) {
+            T maxMagElement = a[0];
+            for (T val : a) {
+                if (std::abs(val) > std::abs(maxMagElement)) {
+                    maxMagElement = val;
+                }
+            }
+            return maxMagElement;
         }
 
-        // returns element with min absolute value
+        // returns element with min absolute value, like above returns the element itself not the magnitude
         template <Scalar T>
-        inline RealType<T> minElement(const std::vector<T>& a) {
+        inline T minElement(const std::vector<T>& a) {
             std::vector<RealType<T>> mags;
-            mags.reserve(a.size());
-            for (T val : a) {mags.emplace_back(std::abs(val));}
-            return *std::min_element(mags.begin(), mags.end());
+            T minMagElement = a[0];
+            for (T val : a) {
+                if (std::abs(val) < std::abs(minMagElement)) {
+                    minMagElement = val;
+                }
+            }
+
+            return minMagElement;
         }
     } // namespace detail
 } // namespace linalg

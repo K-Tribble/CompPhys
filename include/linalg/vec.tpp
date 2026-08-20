@@ -112,11 +112,11 @@ T Vec<T>::sum() const {
 }
 
 template <Scalar T>
-RealType<T> Vec<T>::max() const { 
+T Vec<T>::max() const { 
     return detail::maxElement(data_); 
 }
 template <Scalar T>
-RealType<T> Vec<T>::min() const { 
+T Vec<T>::min() const { 
     return detail::minElement(data_); 
 }
 

@@ -96,8 +96,8 @@ public:
     Vec<T> cross(const Vec<T>& other) const; // requires size() == 3
 
     T sum() const;
-    RealType<T> max() const;
-    RealType<T> min() const;
+    T max() const;
+    T min() const;
 
 private:
     std::vector<T> data_;

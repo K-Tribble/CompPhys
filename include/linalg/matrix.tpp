@@ -269,7 +269,7 @@ bool Matrix<T>::isHermitian(RealType<T> absTol, RealType<T> relTol) const {
 
     for (u32 i = 0; i < rows_; ++i) {
         // check for real diagonal entries
-        if (std::abs(std::imag(*this)) > kDefaultAbsTol) {
+        if (std::abs(std::imag((*this)(i, i))) > kDefaultAbsTol) {
             return false;
         }
         for (u32 j = i + 1; j < cols_; ++j) {
@@ -956,13 +956,13 @@ Matrix<T>& Matrix<T>::matmulInto(const Matrix<T>& other, Matrix<T>& out) const {
 }
 
 template <Scalar T>
-RealType<T> Matrix<T>::max() const {
+T Matrix<T>::max() const {
     return detail::maxElement(data_);
 }
 
 
 template <Scalar T>
-RealType<T> Matrix<T>::min() const {
+T Matrix<T>::min() const {
     return detail::minElement(data_);
 }
 

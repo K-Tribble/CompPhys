@@ -130,8 +130,8 @@ public:
 
     Matrix<T>& matmulInto(const Matrix<T>& other, Matrix<T>& out) const;
 
-    RealType<T> max() const;
-    RealType<T> min() const;
+    T max() const;
+    T min() const;
 
 private:
     u32 rows_, cols_;
