@@ -8,6 +8,7 @@ This project contains implementations developed while studying the Computational
 
 **Vector Operations** (`linalg/vec.hpp`)
 - Dense vector class with standard operations
+- Templated class to accept any floating point, or complex floating point data type
 - Element access and span support
 - Factory methods: `zeros()`, `ones()`, `basis()`, `random()`
 - Arithmetic and algebraic operations
@@ -15,6 +16,7 @@ This project contains implementations developed while studying the Computational
 
 **Matrix Operations** (`linalg/matrix.hpp`)
 - Dense matrix class supporting various operations
+- Templated class to accept any floating point, or complex floating point data type
 - Creation methods: `zeros()`, `ones()`, `identity()`, `diagonal()`
 - Subscript operators for element and row/column access
 - Matrix arithmetic (addition, multiplication, etc.)
@@ -121,6 +123,7 @@ CompPhys/
 ├── include/                   # Header files (API definitions)
 │   ├── constants.hpp          # Global constants and tolerances
 │   ├── types.hpp              # Type aliases
+│   ├── scalar.hpp             # Define Scalar concept 
 │   ├── nonlin_solve.hpp       # Nonlinear root finding
 │   ├── interpolation.hpp      # Interpolation methods
 │   ├── calculus/
@@ -128,20 +131,19 @@ CompPhys/
 │   │   └── integration.hpp      # Numerical integration
 │   └── linalg/
 │       ├── matrix.hpp              # Matrix class and operations
+│       ├── matrix.tpp              # Matrix class mplementations
 │       ├── vec.hpp                 # Vector class and operations
+│       ├── vec.tpp                 # Vector implementations
 │       ├── linalg_common.hpp       # Shared linear algebra utilities
 │       ├── linalg_interop.hpp      # Interoperability utilities
+│       ├── linalg_interop.tpp      # Interoperability utilities implementations
 │       └── linalg_solve.hpp        # Solver algorithms
+│       └── linalg_solve.tpp        # Solver algorithms implementations
 ├── src/                       # Implementation files
 │   ├── main.cpp               # Main executable and examples
 │   ├── interpolation.cpp
 │   ├── calculus/
 │   │   └── differentiation.cpp
-│   └── linalg/
-│       ├── matrix.cpp
-│       ├── vec.cpp
-│       ├── linalg_interop.cpp
-│       └── linalg_solve.cpp
 ├── tests/                     # Comprehensive unit tests
 │   ├── test_vec.cpp           # Vector operations tests
 │   ├── test_matrix.cpp        # Matrix operations tests
@@ -189,15 +191,15 @@ make test
 #include "linalg/matrix.hpp"
 
 // Create vectors
-linalg::Vec v1(5, 0.0);                    // 5-element vector initialized to 0
-linalg::Vec v2 = {1.0, 2.0, 3.0};          // Initialize from list
-linalg::Vec v3 = linalg::Vec::ones(5);     // Vector of ones
-linalg::Vec v4 = linalg::Vec::random(5);   // Random vector [-1, 1]
+linalg::Vec<double> v1(5, 0.0);                    // 5-element vector initialized to 0
+linalg::Vec<double> v2 = {1.0, 2.0, 3.0};          // Initialize from list
+linalg::Vec<double> v3 = linalg::Vec<double>::ones(5);     // Vector of ones
+linalg::Vec<double> v4 = linalg::Vec<double>::random(5);   // Random vector [-1, 1]
 
 // Create matrices
-linalg::Matrix A(3, 3, 1.0);                    // 3x3 matrix initialized to 1
-linalg::Matrix I = linalg::Matrix::identity(3); // 3x3 identity matrix
-linalg::Matrix D = linalg::Matrix::diagonal({1, 2, 3}); // Diagonal matrix
+linalg::Matrix<double> A(3, 3, 1.0);                    // 3x3 matrix initialized to 1
+linalg::Matrix<double> I = linalg::Matrix<double>::identity(3); // 3x3 identity matrix
+linalg::Matrix<double> D = linalg::Matrix<double>::diagonal({1, 2, 3}); // Diagonal matrix
 
 // Access elements
 double val = A(0, 1);  // Get element at row 0, column 1
@@ -210,14 +212,14 @@ linalg::Vec col = A.getCol(1); // Get column 1
 ```cpp
 #include "linalg/linalg_solve.hpp"
 
-linalg::Matrix A = {...};  // Coefficient matrix
-linalg::Vec b = {...};      // Right-hand side
+linalg::Matrix<double> A = {...};  // Coefficient matrix
+linalg::Vec<double> b = {...};      // Right-hand side
 
 // Direct solver using LU decomposition
-linalg::Vec x = linalg::solve::lu(A, b);
+linalg::Vec<double> x = linalg::solve::lu(A, b);
 
 // Iterative solvers with custom stopping conditions
-linalg::solve::IterStoppingCondition sc;
+linalg::solve::IterStoppingCondition<double> sc;
 sc.stopCondition = 1e-12;
 sc.errType = linalg::solve::errorType::Residual;
 
