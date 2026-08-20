@@ -47,14 +47,19 @@ namespace solve {
     template <Scalar T>
     Vec<T> backSub(const Matrix<T>& up, const Vec<T>& rhs);
     
+    // Solve Ax=b for a given LU result. Where A has been broken down into PA=LU
     template <Scalar T>
     Vec<T> lu(const LUResult<T>& f, const Vec<T>& b);
+    // Solve Ax=b for a given LU result. Where A has been broken down into PA=LU
+    // Does this for several matrices b that are stored in an std::vector
     template <Scalar T>
     std::vector<Vec<T>> lu(const LUResult<T>& f, const std::vector<Vec<T>>& bs);
     
+    // Solve Ax=b for a given A matrix and b vector.
     template <Scalar T>
     Vec<T> lu(const Matrix<T>& A, const Vec<T>& b);
     
+    // Solve Ax=b for a given A matrix, and several b vectors stored in an std::vector
     template <Scalar T>
     std::vector<Vec<T>> lu(const Matrix<T>& A, const std::vector<Vec<T>>& bs);
     
