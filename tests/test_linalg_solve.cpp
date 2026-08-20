@@ -1,3 +1,11 @@
+// Catch2 (v3) test suite for linalg::solve functions
+//
+// Build notes:
+//   - Requires Catch2 v3 (link against Catch2::Catch2WithMain) plus the
+//     linalg library sources (matrix.cpp, vec.cpp, linalg_interop.cpp).
+//   - Include paths must expose both "linalg/<header>.hpp" and the
+//     top-level "types.hpp" / "constants.hpp" used by those headers.
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <stdexcept>
@@ -7,6 +15,7 @@
 #include "linalg/vec.hpp"
 #include "linalg/linalg_interop.hpp"
 #include "linalg/linalg_solve.hpp"
+#include "types.hpp"
 
 using namespace linalg;
 using namespace linalg::solve;
@@ -17,127 +26,127 @@ namespace {
 
 TEST_CASE("forwardSub solves lower-triangular systems", "[solve][forwardSub]") {
     // L * [4, 1]^T = [4, 11]^T
-    Matrix L{{1.0, 0.0},
+    Matrix<d64> L{{1.0, 0.0},
              {2.0, 3.0}};
-    Vec expected{4.0, 1.0};
+    Vec<d64> expected{4.0, 1.0};
 
     SECTION("correctness") {
-        Vec b{4.0, 11.0};
-        Vec x = forwardSub(L, b);
+        Vec<d64> b{4.0, 11.0};
+        Vec<d64> x = forwardSub(L, b);
         REQUIRE(x.isApprox(expected, kTol));
     }
 
     SECTION("throws on rhs/matrix size mismatch") {
-        Vec bBad(3);
+        Vec<d64> bBad(3);
         REQUIRE_THROWS_AS(forwardSub(L, bBad), std::invalid_argument);
     }
 
     SECTION("throws on non-square matrix") {
-        Matrix rect(2, 3, 0.0);
-        Vec b(2);
+        Matrix<d64> rect(2, 3, 0.0);
+        Vec<d64> b(2);
         REQUIRE_THROWS_AS(forwardSub(rect, b), std::invalid_argument);
     }
 }
 
 TEST_CASE("backSub solves upper-triangular systems", "[solve][backSub]") {
     // U * [1, 2]^T = [4, 6]^T
-    Matrix U{{2.0, 1.0},
+    Matrix<d64> U{{2.0, 1.0},
              {0.0, 3.0}};
-    Vec expected{1.0, 2.0};
+    Vec<d64> expected{1.0, 2.0};
 
     SECTION("correctness") {
-        Vec b{4.0, 6.0};
-        Vec x = backSub(U, b);
+        Vec<d64> b{4.0, 6.0};
+        Vec<d64> x = backSub(U, b);
         REQUIRE(x.isApprox(expected, kTol));
     }
 
     SECTION("throws on rhs/matrix size mismatch") {
-        Vec bBad(3);
+        Vec<d64> bBad(3);
         REQUIRE_THROWS_AS(backSub(U, bBad), std::invalid_argument);
     }
 
     SECTION("throws on non-square matrix") {
-        Matrix rect(2, 3, 0.0);
-        Vec b(2);
+        Matrix<d64> rect(2, 3, 0.0);
+        Vec<d64> b(2);
         REQUIRE_THROWS_AS(backSub(rect, b), std::invalid_argument);
     }
 }
 
 TEST_CASE("lu solves Ax=b via LU decomposition", "[solve][lu]") {
     // A(0,0) == 0, so this only works if LUDecomp() pivots correctly.
-    Matrix A{{0.0, 1.0},
+    Matrix<d64> A{{0.0, 1.0},
              {1.0, 1.0}};
-    Vec x1{1.0, 2.0};    // A*x1 = [2, 3]
-    Vec b1{2.0, 3.0};
-    Vec x2{3.0, -1.0};   // A*x2 = [-1, 2]
-    Vec b2{-1.0, 2.0};
+    Vec<d64> x1{1.0, 2.0};    // A*x1 = [2, 3]
+    Vec<d64> b1{2.0, 3.0};
+    Vec<d64> x2{3.0, -1.0};   // A*x2 = [-1, 2]
+    Vec<d64> b2{-1.0, 2.0};
 
     SECTION("Matrix overload solves correctly with pivoting") {
-        Vec x = lu(A, b1);
+        Vec<d64> x = lu(A, b1);
         REQUIRE(x.isApprox(x1, kTol));
     }
 
     SECTION("LUResult overload agrees with the Matrix overload") {
-        LUResult f = A.LUDecomp();
-        Vec xFromResult = lu(f, b1);
-        Vec xFromMatrix = lu(A, b1);
+        LUResult<d64> f = A.LUDecomp();
+        Vec<d64> xFromResult = lu(f, b1);
+        Vec<d64> xFromMatrix = lu(A, b1);
         REQUIRE(xFromResult.isApprox(xFromMatrix, kTol));
         REQUIRE(xFromResult.isApprox(x1, kTol));
     }
 
     SECTION("multi right-hand-side overload matches solving each individually") {
-        std::vector<Vec> bs{b1, b2};
-        std::vector<Vec> sols = lu(A, bs);
+        std::vector<Vec<d64>> bs{b1, b2};
+        std::vector<Vec<d64>> sols = lu(A, bs);
         REQUIRE(sols.size() == 2);
         REQUIRE(sols[0].isApprox(x1, kTol));
         REQUIRE(sols[1].isApprox(x2, kTol));
     }
 
     SECTION("throws when rhs size doesn't match the factorization") {
-        Vec bBad(3);
+        Vec<d64> bBad(3);
         REQUIRE_THROWS_AS(lu(A, bBad), std::invalid_argument);
     }
 }
 
 TEST_CASE("jacobi iterative solver", "[solve][jacobi]") {
     // Diagonally dominant SPD system: A*[1,2]^T = [2,7]^T
-    Matrix A{{4.0, -1.0},
+    Matrix<d64> A{{4.0, -1.0},
              {-1.0, 4.0}};
-    Vec b{2.0, 7.0};
-    Vec expected{1.0, 2.0};
-    IterStoppingCondition sc{1e-10, 2, errorType::Fractional};
+    Vec<d64> b{2.0, 7.0};
+    Vec<d64> expected{1.0, 2.0};
+    IterStoppingCondition<d64> sc{1e-10, 2, errorType::Fractional};
 
     SECTION("converges to the correct solution") {
-        IterResult result = jacobi(A, b, sc, 1000);
+        IterResult<d64> result = jacobi(A, b, sc, 1000);
         REQUIRE(result.success);
         REQUIRE(result.x_final.isApprox(expected, 1e-6));
     }
 
     SECTION("throws when the matrix has a zero diagonal entry") {
-        Matrix Azero{{0.0, 1.0},
+        Matrix<d64> Azero{{0.0, 1.0},
                      {1.0, 2.0}};
-        Vec bz(2);
+        Vec<d64> bz(2);
         REQUIRE_THROWS_AS(jacobi(Azero, bz, sc, 1000), std::invalid_argument);
     }
 }
 
 TEST_CASE("sor and gaussSeidel iterative solvers", "[solve][sor][gaussSeidel]") {
-    Matrix A{{4.0, -1.0},
+    Matrix<d64> A{{4.0, -1.0},
              {-1.0, 4.0}};
-    Vec b{2.0, 7.0};
-    Vec expected{1.0, 2.0};
-    IterStoppingCondition sc{1e-10, 2, errorType::Fractional};
+    Vec<d64> b{2.0, 7.0};
+    Vec<d64> expected{1.0, 2.0};
+    IterStoppingCondition<d64> sc{1e-10, 2, errorType::Fractional};
 
     SECTION("gaussSeidel is equivalent to sor with w = 1") {
-        IterResult gs = gaussSeidel(A, b, sc, 1000);
-        IterResult so = sor(A, b, 1.0, sc, 1000);
+        IterResult<d64> gs = gaussSeidel(A, b, sc, 1000);
+        IterResult<d64> so = sor(A, b, 1.0, sc, 1000);
         REQUIRE(gs.numIter == so.numIter);
         REQUIRE(gs.x_final.isApprox(so.x_final, 1e-12));
     }
 
     SECTION("converges to the correct solution for both splits") {
-        IterResult lower = sor(A, b, 1.0, sc, 1000, SplitType::Lower);
-        IterResult upper = sor(A, b, 1.0, sc, 1000, SplitType::Upper);
+        IterResult<d64> lower = sor(A, b, 1.0, sc, 1000, SplitType::Lower);
+        IterResult<d64> upper = sor(A, b, 1.0, sc, 1000, SplitType::Upper);
         REQUIRE(lower.success);
         REQUIRE(upper.success);
         REQUIRE(lower.x_final.isApprox(expected, 1e-6));
@@ -205,11 +214,11 @@ TEST_CASE("All Iterative Solvers with 50x50 matrix", "[solve][jacobi][sor][gauss
         {-4.8, -6.8, -6.5, -8.1, 1.6, -5.5, 8.3, 1.4, -7.7, 7.5, -1.8, 7.1, -1.1, 8.2, -8.3, 4.1, 3.9, -2.5, -2.3, -5.9, 8.3, 8.2, 8.0, 6.4, -5.5, -0.7, 3.1, -4.2, -6.8, -4.8, -6.4, -3.9, 2.7, -9.3, -0.7, 4.2, 4.7, -0.5, 2.0, 4.2, -6.6, 5.7, -7.7, -8.3, -2.0, 0.2, 8.4, 8.5, 2.3, 253.8}
     };
 
-    Vec b{-371.6, 1428.6, 1158.3, 2258.0, 3311.4, 1186.4, 909.4, 2305.2, 1386.7, 788.4, 1571.5, 4657.4, 4966.3, 4637.6, 2656.3, 5000.1, 3624.4, 5887.5, 4369.7, 5526.0, 4020.6, 6007.7, 5493.4, 7247.2, 5467.6, 6660.1, 7006.0, 7338.7, 7662.7, 7718.5, 7990.0, 6924.3, 7032.2, 8973.5, 9324.4, 9963.4, 9306.2, 9291.6, 7492.3, 10592.0, 9934.2, 12374.7, 12732.8, 7230.8, 12254.9, 12536.8, 10894.1, 12238.6, 12380.6, 12882.3};
+    Vec<d64> b{-371.6, 1428.6, 1158.3, 2258.0, 3311.4, 1186.4, 909.4, 2305.2, 1386.7, 788.4, 1571.5, 4657.4, 4966.3, 4637.6, 2656.3, 5000.1, 3624.4, 5887.5, 4369.7, 5526.0, 4020.6, 6007.7, 5493.4, 7247.2, 5467.6, 6660.1, 7006.0, 7338.7, 7662.7, 7718.5, 7990.0, 6924.3, 7032.2, 8973.5, 9324.4, 9963.4, 9306.2, 9291.6, 7492.3, 10592.0, 9934.2, 12374.7, 12732.8, 7230.8, 12254.9, 12536.8, 10894.1, 12238.6, 12380.6, 12882.3};
 
-    Vec x_exact{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0};
+    Vec<d64> x_exact{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0};
 
-    solve::IterStoppingCondition sc;
+    solve::IterStoppingCondition<d64> sc;
     sc.stopCondition = 1e-14;
     sc.lnorm_ord = 2;
     sc.errType = solve::errorType::Fractional;
@@ -230,16 +239,16 @@ TEST_CASE("All Iterative Solvers with 50x50 matrix", "[solve][jacobi][sor][gauss
 }
 
 TEST_CASE("runSplitIteration", "[solve][runSplitIteration]") {
-    Matrix A{{4.0, -1.0},
+    Matrix<d64> A{{4.0, -1.0},
              {-1.0, 4.0}};
-    Vec b{2.0, 7.0};
-    Vec expected{1.0, 2.0};
+    Vec<d64> b{2.0, 7.0};
+    Vec<d64> expected{1.0, 2.0};
 
     // Same splitting jacobi() uses internally: B = diag(A), S = A - B.
-    Matrix B = Matrix::diagonal(A.getDiag());
-    Matrix S = A - B;
-    solveFn diagSolve = [](const Matrix& Bmat, const Vec& rhs) {
-        Vec y(rhs.size());
+    Matrix<d64> B = Matrix<d64>::diagonal(A.getDiag());
+    Matrix<d64> S = A - B;
+    solveFn<d64> diagSolve = [](const Matrix<d64>& Bmat, const Vec<d64>& rhs) {
+        Vec<d64> y(rhs.size());
         for (u32 i = 0; i < rhs.size(); ++i) {
             y(i) = rhs(i) / Bmat(i, i);
         }
@@ -247,13 +256,13 @@ TEST_CASE("runSplitIteration", "[solve][runSplitIteration]") {
     };
 
     SECTION("converges under both Fractional and Residual stopping conditions") {
-        IterStoppingCondition scFrac{1e-10, 2, errorType::Fractional};
-        IterResult resFrac = runSplitIteration(A, b, B, S, diagSolve, scFrac, 1000);
+        IterStoppingCondition<d64> scFrac{1e-10, 2, errorType::Fractional};
+        IterResult<d64> resFrac = runSplitIteration(A, b, B, S, diagSolve, scFrac, 1000);
         REQUIRE(resFrac.success);
         REQUIRE(resFrac.x_final.isApprox(expected, 1e-6));
 
-        IterStoppingCondition scRes{1e-10, 2, errorType::Residual};
-        IterResult resRes = runSplitIteration(A, b, B, S, diagSolve, scRes, 1000);
+        IterStoppingCondition<d64> scRes{1e-10, 2, errorType::Residual};
+        IterResult<d64> resRes = runSplitIteration(A, b, B, S, diagSolve, scRes, 1000);
         REQUIRE(resRes.success);
         REQUIRE(resRes.x_final.isApprox(expected, 1e-6));
         REQUIRE(resRes.finalResidualVector.lnorm(2) < 1e-6);
@@ -262,8 +271,8 @@ TEST_CASE("runSplitIteration", "[solve][runSplitIteration]") {
     SECTION("reports failure once maxIter is reached without converging") {
         // err is always >= 0, so a negative stopCondition can never be met -
         // guarantees a deterministic non-convergence path.
-        IterStoppingCondition scUnreachable{-1.0, 2, errorType::Fractional};
-        IterResult result = runSplitIteration(A, b, B, S, diagSolve, scUnreachable, 5);
+        IterStoppingCondition<d64> scUnreachable{-1.0, 2, errorType::Fractional};
+        IterResult<d64> result = runSplitIteration(A, b, B, S, diagSolve, scUnreachable, 5);
         REQUIRE_FALSE(result.success);
         REQUIRE(result.numIter == 5);
     }

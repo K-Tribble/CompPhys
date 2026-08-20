@@ -22,7 +22,7 @@ using namespace linalg;
 
 TEST_CASE("Matrix construction", "[matrix][construction]") {
     SECTION("fill constructor") {
-        Matrix m(2, 3, 7.0);
+        Matrix<d64> m(2, 3, 7.0);
         REQUIRE(m.rows() == 2);
         REQUIRE(m.cols() == 3);
         for (u32 i = 0; i < 2; ++i) {
@@ -33,7 +33,7 @@ TEST_CASE("Matrix construction", "[matrix][construction]") {
     }
 
     SECTION("flat row-major data constructor") {
-        Matrix m(2, 2, std::vector<d64>{1.0, 2.0, 3.0, 4.0});
+        Matrix<d64> m(2, 2, std::vector<d64>{1.0, 2.0, 3.0, 4.0});
         REQUIRE(m(0, 0) == 1.0);
         REQUIRE(m(0, 1) == 2.0);
         REQUIRE(m(1, 0) == 3.0);
@@ -41,41 +41,41 @@ TEST_CASE("Matrix construction", "[matrix][construction]") {
     }
 
     SECTION("nested initializer-list constructor") {
-        Matrix m{{1.0, 2.0}, {3.0, 4.0}};
+        Matrix<d64> m{{1.0, 2.0}, {3.0, 4.0}};
         REQUIRE(m.rows() == 2);
         REQUIRE(m.cols() == 2);
         REQUIRE(m(1, 0) == 3.0);
     }
 
     SECTION("ragged initializer list throws") {
-        auto build = []() { return Matrix{{1.0, 2.0}, {3.0}}; };
+        auto build = []() { return Matrix<d64>{{1.0, 2.0}, {3.0}}; };
         REQUIRE_THROWS_AS(build(), std::invalid_argument);
     }
 
     SECTION("zeros/ones/identity/diagonal factories") {
-        REQUIRE(Matrix::zeros(2, 2).isZero());
-        REQUIRE(Matrix::ones(2, 2) == Matrix({{1.0, 1.0}, {1.0, 1.0}}));
+        REQUIRE(Matrix<d64>::zeros(2, 2).isZero());
+        REQUIRE(Matrix<d64>::ones(2, 2) == Matrix<d64>({{1.0, 1.0}, {1.0, 1.0}}));
 
-        Matrix I = Matrix::identity(3);
+        Matrix<d64> I = Matrix<d64>::identity(3);
         REQUIRE(I(0, 0) == 1.0);
         REQUIRE(I(0, 1) == 0.0);
         REQUIRE(I.trace() == 3.0);
 
-        Matrix D = Matrix::diagonal({1.0, 2.0, 3.0});
+        Matrix D = Matrix<d64>::diagonal({1.0, 2.0, 3.0});
         REQUIRE(D.getDiag() == std::vector<d64>{1.0, 2.0, 3.0});
         REQUIRE(D(0, 1) == 0.0);
     }
 }
 
 TEST_CASE("Matrix element access", "[matrix][access]") {
-    Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};  // 2x3
+    Matrix<d64> m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};  // 2x3
 
     SECTION("element, row and column access") {
         REQUIRE(m(0, 2) == 3.0);
         m(0, 2) = 9.0;
         REQUIRE(m(0, 2) == 9.0);
-        REQUIRE(m(1) == Vec{4.0, 5.0, 6.0});
-        REQUIRE(m.getCol(0) == Vec{1.0, 4.0});
+        REQUIRE(m(1) == Vec<d64>{4.0, 5.0, 6.0});
+        REQUIRE(m.getCol(0) == Vec<d64>{1.0, 4.0});
         REQUIRE(m.shape() == std::array<u32, 2>{2, 3});
     }
 
@@ -87,31 +87,31 @@ TEST_CASE("Matrix element access", "[matrix][access]") {
     SECTION("getRows/getCols") {
         auto rows = m.getRows();
         REQUIRE(rows.size() == 2);
-        REQUIRE(rows[0] == Vec{1.0, 2.0, 3.0});
+        REQUIRE(rows[0] == Vec<d64>{1.0, 2.0, 3.0});
 
         auto cols = m.getCols();
         REQUIRE(cols.size() == 3);
-        REQUIRE(cols[2] == Vec{3.0, 6.0});
+        REQUIRE(cols[2] == Vec<d64>{3.0, 6.0});
     }
 }
 
 TEST_CASE("Matrix swapRows and swapCols", "[matrix][swap]") {
-    Matrix m{{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};  // 3x2
+    Matrix<d64> m{{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};  // 3x2
 
     SECTION("swapRows correctness and no-op on equal indices") {
-        Matrix a = m;
+        Matrix<d64> a = m;
         a.swapRows(0, 2);
-        REQUIRE(a == Matrix({{5.0, 6.0}, {3.0, 4.0}, {1.0, 2.0}}));
+        REQUIRE(a == Matrix<d64>({{5.0, 6.0}, {3.0, 4.0}, {1.0, 2.0}}));
 
-        Matrix b = m;
+        Matrix<d64> b = m;
         b.swapRows(1, 1);
         REQUIRE(b == m);
     }
 
     SECTION("swapCols correctness") {
-        Matrix a = m;
+        Matrix<d64> a = m;
         a.swapCols(0, 1);
-        REQUIRE(a == Matrix({{2.0, 1.0}, {4.0, 3.0}, {6.0, 5.0}}));
+        REQUIRE(a == Matrix<d64>({{2.0, 1.0}, {4.0, 3.0}, {6.0, 5.0}}));
     }
 
     SECTION("throws on out-of-range indices") {
@@ -121,153 +121,153 @@ TEST_CASE("Matrix swapRows and swapCols", "[matrix][swap]") {
 }
 
 TEST_CASE("Matrix arithmetic operators", "[matrix][arithmetic]") {
-    Matrix A{{1.0, 2.0}, {3.0, 4.0}};
-    Matrix B{{5.0, 6.0}, {7.0, 8.0}};
+    Matrix<d64> A{{1.0, 2.0}, {3.0, 4.0}};
+    Matrix<d64> B{{5.0, 6.0}, {7.0, 8.0}};
 
     SECTION("matrix multiplication") {
-        REQUIRE(A * B == Matrix({{19.0, 22.0}, {43.0, 50.0}}));
+        REQUIRE(A * B == Matrix<d64>({{19.0, 22.0}, {43.0, 50.0}}));
     }
 
     SECTION("matmul dimension mismatch throws") {
-        Matrix D(3, 3, 0.0);
+        Matrix<d64> D(3, 3, 0.0);
         REQUIRE_THROWS_AS(A * D, std::invalid_argument);
     }
 
     SECTION("scalar multiply/divide") {
-        REQUIRE(A * 2.0 == Matrix({{2.0, 4.0}, {6.0, 8.0}}));
-        REQUIRE((B / 2.0).isApprox(Matrix({{2.5, 3.0}, {3.5, 4.0}}), 1e-12, 0.0));
+        REQUIRE(A * 2.0 == Matrix<d64>({{2.0, 4.0}, {6.0, 8.0}}));
+        REQUIRE((B / 2.0).isApprox(Matrix<d64>({{2.5, 3.0}, {3.5, 4.0}}), 1e-12, 0.0));
     }
 
     SECTION("elementwise add/subtract") {
-        REQUIRE(A + B == Matrix({{6.0, 8.0}, {10.0, 12.0}}));
-        REQUIRE(B - A == Matrix({{4.0, 4.0}, {4.0, 4.0}}));
+        REQUIRE(A + B == Matrix<d64>({{6.0, 8.0}, {10.0, 12.0}}));
+        REQUIRE(B - A == Matrix<d64>({{4.0, 4.0}, {4.0, 4.0}}));
     }
 
     SECTION("shape mismatch throws for add/subtract") {
-        Matrix E(3, 3, 0.0);
+        Matrix<d64> E(3, 3, 0.0);
         REQUIRE_THROWS_AS(A + E, std::invalid_argument);
         REQUIRE_THROWS_AS(A - E, std::invalid_argument);
     }
 
     SECTION("in-place operators mutate correctly") {
-        Matrix a = A; a += B;
-        REQUIRE(a == Matrix({{6.0, 8.0}, {10.0, 12.0}}));
+        Matrix<d64> a = A; a += B;
+        REQUIRE(a == Matrix<d64>({{6.0, 8.0}, {10.0, 12.0}}));
 
-        Matrix b = B; b -= A;
-        REQUIRE(b == Matrix({{4.0, 4.0}, {4.0, 4.0}}));
+        Matrix<d64> b = B; b -= A;
+        REQUIRE(b == Matrix<d64>({{4.0, 4.0}, {4.0, 4.0}}));
 
-        Matrix c = A; c *= 2.0;
-        REQUIRE(c == Matrix({{2.0, 4.0}, {6.0, 8.0}}));
+        Matrix<d64> c = A; c *= 2.0;
+        REQUIRE(c == Matrix<d64>({{2.0, 4.0}, {6.0, 8.0}}));
     }
 }
 
 TEST_CASE("Matrix hadamard product", "[matrix][hadamard]") {
-    Matrix A{{1.0, 2.0}, {3.0, 4.0}};
-    Matrix B{{5.0, 6.0}, {7.0, 8.0}};
+    Matrix<d64> A{{1.0, 2.0}, {3.0, 4.0}};
+    Matrix<d64> B{{5.0, 6.0}, {7.0, 8.0}};
 
     SECTION("correctness") {
-        REQUIRE(A.hadamard(B) == Matrix({{5.0, 12.0}, {21.0, 32.0}}));
+        REQUIRE(A.hadamard(B) == Matrix<d64>({{5.0, 12.0}, {21.0, 32.0}}));
 
-        Matrix a = A;
+        Matrix<d64> a = A;
         a.hadamardInPlace(B);
-        REQUIRE(a == Matrix({{5.0, 12.0}, {21.0, 32.0}}));
+        REQUIRE(a == Matrix<d64>({{5.0, 12.0}, {21.0, 32.0}}));
     }
 
     SECTION("shape mismatch throws") {
-        Matrix C(3, 3, 0.0);
+        Matrix<d64> C(3, 3, 0.0);
         REQUIRE_THROWS_AS(A.hadamard(C), std::invalid_argument);
     }
 }
 
 TEST_CASE("Matrix comparisons", "[matrix][compare]") {
     SECTION("equality and approx equality") {
-        Matrix A{{1.0, 2.0}, {3.0, 4.0}};
-        Matrix Aclose{{1.0, 2.0}, {3.0, 4.0 + 1e-7}};
+        Matrix<d64> A{{1.0, 2.0}, {3.0, 4.0}};
+        Matrix<d64> Aclose{{1.0, 2.0}, {3.0, 4.0 + 1e-7}};
         REQUIRE_FALSE(A == Aclose);
         REQUIRE(A.isApprox(Aclose, 1e-6, 0.0));
         REQUIRE_FALSE(A.isApprox(Aclose, 1e-9, 0.0));
     }
 
     SECTION("isZero") {
-        Matrix Z(2, 2, 0.0);
+        Matrix<d64> Z(2, 2, 0.0);
         REQUIRE(Z.isZero());
 
-        Matrix NZ{{0.0, 1e-3}, {0.0, 0.0}};
+        Matrix<d64> NZ{{0.0, 1e-3}, {0.0, 0.0}};
         REQUIRE_FALSE(NZ.isZero(1e-6));
         REQUIRE(NZ.isZero(1e-2));
     }
 
     SECTION("isSymmetric") {
-        Matrix Sym{{2.0, 1.0}, {1.0, 3.0}};
+        Matrix<d64> Sym{{2.0, 1.0}, {1.0, 3.0}};
         REQUIRE(Sym.isSymmetric());
 
-        Matrix NonSym{{2.0, 1.0}, {0.0, 3.0}};
+        Matrix<d64> NonSym{{2.0, 1.0}, {0.0, 3.0}};
         REQUIRE_FALSE(NonSym.isSymmetric());
 
-        Matrix Rect(2, 3, 0.0);
+        Matrix<d64> Rect(2, 3, 0.0);
         REQUIRE_FALSE(Rect.isSymmetric());
     }
 
     SECTION("absDiff") {
-        Matrix A{{1.0, -2.0}, {3.0, 4.0}};
+        Matrix<d64> A{{1.0, -2.0}, {3.0, 4.0}};
         Matrix B{{4.0, 2.0}, {0.0, 4.0}};
-        REQUIRE(A.absDiff(B) == Matrix({{3.0, 4.0}, {3.0, 0.0}}));
+        REQUIRE(A.absDiff(B) == Matrix<d64>({{3.0, 4.0}, {3.0, 0.0}}));
 
-        Matrix C(3, 3, 0.0);
+        Matrix<d64> C(3, 3, 0.0);
         REQUIRE_THROWS_AS(A.absDiff(C), std::invalid_argument);
     }
 }
 
 TEST_CASE("Matrix transpose", "[matrix][transpose]") {
-    Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};  // 2x3
-    Matrix At = A.transpose();
+    Matrix<d64> A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};  // 2x3
+    Matrix<d64> At = A.transpose();
     REQUIRE(At.rows() == 3);
     REQUIRE(At.cols() == 2);
-    REQUIRE(At == Matrix({{1.0, 4.0}, {2.0, 5.0}, {3.0, 6.0}}));
+    REQUIRE(At == Matrix<d64>({{1.0, 4.0}, {2.0, 5.0}, {3.0, 6.0}}));
 }
 
 TEST_CASE("Matrix determinant", "[matrix][determinant]") {
     SECTION("1x1") {
-        Matrix A(1, 1, std::vector<d64>{5.0});
+        Matrix<d64> A(1, 1, std::vector<d64>{5.0});
         REQUIRE(A.determinant() == 5.0);
     }
 
     SECTION("2x2 exact formula") {
-        Matrix B{{3.0, 8.0}, {4.0, 6.0}};
+        Matrix<d64> B{{3.0, 8.0}, {4.0, 6.0}};
         REQUIRE(B.determinant() == -14.0);  // 3*6 - 8*4
     }
 
     SECTION("3x3 via elimination") {
-        Matrix C{{6.0, 1.0, 1.0}, {4.0, -2.0, 5.0}, {2.0, 8.0, 7.0}};
+        Matrix<d64> C{{6.0, 1.0, 1.0}, {4.0, -2.0, 5.0}, {2.0, 8.0, 7.0}};
         REQUIRE(std::fabs(C.determinant() - (-306.0)) < 1e-9);
     }
 
     SECTION("singular 2x2 has zero determinant") {
-        Matrix S{{1.0, 2.0}, {2.0, 4.0}};
+        Matrix<d64> S{{1.0, 2.0}, {2.0, 4.0}};
         REQUIRE(S.determinant() == 0.0);
     }
 
     SECTION("non-square throws") {
-        Matrix R(2, 3, 0.0);
+        Matrix<d64> R(2, 3, 0.0);
         REQUIRE_THROWS_AS(R.determinant(), std::invalid_argument);
     }
 }
 
 TEST_CASE("Matrix minors and cofactors", "[matrix][cofactor]") {
-    Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 10.0}};
+    Matrix<d64> A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 10.0}};
 
     SECTION("getMinor removes the correct row/col") {
-        REQUIRE(A.getMinor(0, 0) == Matrix({{5.0, 6.0}, {8.0, 10.0}}));
+        REQUIRE(A.getMinor(0, 0) == Matrix<d64>({{5.0, 6.0}, {8.0, 10.0}}));
     }
 
     SECTION("getMinor throws when matrix is too small or index is out of range") {
-        Matrix tiny(1, 1, std::vector<d64>{5.0});
+        Matrix<d64> tiny(1, 1, std::vector<d64>{5.0});
         REQUIRE_THROWS_AS(tiny.getMinor(0, 0), std::invalid_argument);
         REQUIRE_THROWS_AS(A.getMinor(5, 0), std::out_of_range);
     }
 
     SECTION("cofactor matrix applies the checkerboard sign") {
-        Matrix cof = A.getCofactorMatrix();
+        Matrix<d64> cof = A.getCofactorMatrix();
         REQUIRE(cof(0, 0) == 2.0);   // +det[[5,6],[8,10]]  = 50-48
         REQUIRE(cof(0, 1) == 2.0);   // -det[[4,6],[7,10]]  = -(40-42)
     }
@@ -275,11 +275,11 @@ TEST_CASE("Matrix minors and cofactors", "[matrix][cofactor]") {
 
 TEST_CASE("Matrix LU decomposition", "[matrix][lu]") {
     SECTION("P*A = L*U, with unit-lower L and upper-triangular U") {
-        Matrix A{{0.0, 1.0}, {1.0, 1.0}};  // A(0,0)==0, forces a pivot
-        LUResult f = A.LUDecomp();
+        Matrix<d64> A{{0.0, 1.0}, {1.0, 1.0}};  // A(0,0)==0, forces a pivot
+        LUResult<d64> f = A.LUDecomp();
 
-        Matrix PA = f.P * A;
-        Matrix LU = f.L * f.U;
+        Matrix<d64> PA = f.P * A;
+        Matrix<d64> LU = f.L * f.U;
         REQUIRE(PA.isApprox(LU, 1e-9, 0.0));
         REQUIRE(std::fabs(f.L(0, 0) - 1.0) < 1e-9);
         REQUIRE(std::fabs(f.L(1, 1) - 1.0) < 1e-9);
@@ -288,40 +288,40 @@ TEST_CASE("Matrix LU decomposition", "[matrix][lu]") {
     }
 
     SECTION("non-square throws") {
-        Matrix R(2, 3, 0.0);
+        Matrix<d64> R(2, 3, 0.0);
         REQUIRE_THROWS_AS(R.LUDecomp(), std::invalid_argument);
     }
 
     SECTION("a matrix with a zero pivot column throws") {
-        Matrix S{{0.0, 1.0}, {0.0, 1.0}};  // entire first column is zero
+        Matrix<d64> S{{0.0, 1.0}, {0.0, 1.0}};  // entire first column is zero
         REQUIRE_THROWS_AS(S.LUDecomp(), std::runtime_error);
     }
 }
 
 TEST_CASE("Matrix QR decomposition", "[matrix][qr]") {
-    Matrix A{{4.0, 1.0}, {3.0, 2.0}};
+    Matrix<d64> A{{4.0, 1.0}, {3.0, 2.0}};
 
     SECTION("Q is orthogonal, R is upper triangular, Q*R reconstructs A") {
-        QRResult qr = A.QRDecomp();
+        QRResult<d64> qr = A.QRDecomp();
 
-        Matrix QtQ = qr.Q.transpose() * qr.Q;
-        REQUIRE(QtQ.isApprox(Matrix::identity(2), 1e-9, 0.0));
+        Matrix<d64> QtQ = qr.Q.transpose() * qr.Q;
+        REQUIRE(QtQ.isApprox(Matrix<d64>::identity(2), 1e-9, 0.0));
         REQUIRE(std::fabs(qr.R(1, 0)) < 1e-9);
 
-        Matrix recon = qr.Q * qr.R;
+        Matrix<d64> recon = qr.Q * qr.R;
         REQUIRE(recon.isApprox(A, 1e-9, 0.0));
     }
 
     SECTION("non-square throws") {
-        Matrix R(2, 3, 0.0);
+        Matrix<d64> R(2, 3, 0.0);
         REQUIRE_THROWS_AS(R.QRDecomp(), std::invalid_argument);
     }
 }
 
 TEST_CASE("Matrix symmetric eigen decomposition", "[matrix][eigen]") {
     SECTION("recovers the correct eigenvalues") {
-        Matrix A{{2.0, 1.0}, {1.0, 2.0}};  // eigenvalues 1 and 3
-        EigenResult res = A.symmetricEigenQR();
+        Matrix<d64> A{{2.0, 1.0}, {1.0, 2.0}};  // eigenvalues 1 and 3
+        EigenResult<d64> res = A.hermitianEigenQR();
 
         std::vector<d64> vals = res.eigenvalues;
         REQUIRE(vals.size() == 2);
@@ -331,39 +331,39 @@ TEST_CASE("Matrix symmetric eigen decomposition", "[matrix][eigen]") {
     }
 
     SECTION("throws for a non-symmetric matrix") {
-        Matrix NonSym{{1.0, 2.0}, {0.0, 1.0}};
-        REQUIRE_THROWS_AS(NonSym.symmetricEigenQR(), std::invalid_argument);
+        Matrix<d64> NonSym{{1.0, 2.0}, {0.0, 1.0}};
+        REQUIRE_THROWS_AS(NonSym.hermitianEigenQR(), std::invalid_argument);
     }
 
     SECTION("throws for a non-square matrix") {
-        Matrix Rect(2, 3, 0.0);
-        REQUIRE_THROWS_AS(Rect.symmetricEigenQR(), std::invalid_argument);
+        Matrix<d64> Rect(2, 3, 0.0);
+        REQUIRE_THROWS_AS(Rect.hermitianEigenQR(), std::invalid_argument);
     }
 }
 
 // more tests to test eigen decomposition of matrix
-static void checkEigenDecomposition(const Matrix& A) {
-    EigenResult res = A.symmetricEigenQR();
+static void checkEigenDecomposition(const Matrix<d64>& A) {
+    EigenResult<d64> res = A.hermitianEigenQR();
     u32 n = A.rows();
     for (u32 k = 0; k < n; ++k) {
-        Vec v = res.eigenvectors.getCol(k);
+        Vec<d64> v = res.eigenvectors.getCol(k);
         REQUIRE((A * v).isApprox(v * res.eigenvalues[k], 1e-7, 1e-7));
     }
-    REQUIRE((res.eigenvectors.transpose() * res.eigenvectors).isApprox(Matrix::identity(n), 1e-7, 1e-7));
-    Matrix D = Matrix::diagonal(res.eigenvalues);
+    REQUIRE((res.eigenvectors.transpose() * res.eigenvectors).isApprox(Matrix<d64>::identity(n), 1e-7, 1e-7));
+    Matrix<d64> D = Matrix<d64>::diagonal(res.eigenvalues);
     REQUIRE((res.eigenvectors * D * res.eigenvectors.transpose()).isApprox(A, 1e-7, 1e-7));
     d64 sumEig = 0;
     for (auto v : res.eigenvalues) sumEig += v;
     REQUIRE(std::fabs(A.trace() - sumEig) < 1e-6);
 }
 
-TEST_CASE("Eigen decomp: 1x1") { checkEigenDecomposition(Matrix{{7}}); }
-TEST_CASE("Eigen decomp: 2x2 simple") { checkEigenDecomposition(Matrix{{2,1},{1,2}}); }
-TEST_CASE("Eigen decomp: 3x3 distinct eigenvalues") { checkEigenDecomposition(Matrix{{4,1,2},{1,3,0},{2,0,5}}); }
-TEST_CASE("Eigen decomp: repeated eigenvalue") { checkEigenDecomposition(Matrix{{2,0,0},{0,2,0},{0,0,3}}); }
+TEST_CASE("Eigen decomp: 1x1") { checkEigenDecomposition(Matrix<d64>{{7}}); }
+TEST_CASE("Eigen decomp: 2x2 simple") { checkEigenDecomposition(Matrix<d64>{{2,1},{1,2}}); }
+TEST_CASE("Eigen decomp: 3x3 distinct eigenvalues") { checkEigenDecomposition(Matrix<d64>{{4,1,2},{1,3,0},{2,0,5}}); }
+TEST_CASE("Eigen decomp: repeated eigenvalue") { checkEigenDecomposition(Matrix<d64>{{2,0,0},{0,2,0},{0,0,3}}); }
 
 TEST_CASE("Matrix trace, diagProduct and getDiag", "[matrix][diag]") {
-    Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
+    Matrix<d64> A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
 
     SECTION("correctness") {
         REQUIRE(A.trace() == 15.0);
@@ -380,28 +380,28 @@ TEST_CASE("Matrix trace, diagProduct and getDiag", "[matrix][diag]") {
 }
 
 TEST_CASE("Matrix getLower and getUpper", "[matrix][triangular]") {
-    Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
+    Matrix<d64> A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
 
     SECTION("correctness: strictly-triangular parts, diagonal excluded") {
-        REQUIRE(A.getLower() == Matrix({{0.0, 0.0, 0.0}, {4.0, 0.0, 0.0}, {7.0, 8.0, 0.0}}));
-        REQUIRE(A.getUpper() == Matrix({{0.0, 2.0, 3.0}, {0.0, 0.0, 6.0}, {0.0, 0.0, 0.0}}));
+        REQUIRE(A.getLower() == Matrix<d64>({{0.0, 0.0, 0.0}, {4.0, 0.0, 0.0}, {7.0, 8.0, 0.0}}));
+        REQUIRE(A.getUpper() == Matrix<d64>({{0.0, 2.0, 3.0}, {0.0, 0.0, 6.0}, {0.0, 0.0, 0.0}}));
     }
 
     SECTION("throws for a non-square matrix") {
-        Matrix R(2, 3, 0.0);
+        Matrix<d64> R(2, 3, 0.0);
         REQUIRE_THROWS_AS(R.getLower(), std::invalid_argument);
         REQUIRE_THROWS_AS(R.getUpper(), std::invalid_argument);
     }
 }
 
 TEST_CASE("Matrix inverse", "[matrix][inverse]") {
-    Matrix A{{4.0, 7.0}, {2.0, 6.0}};  // det = 10
-    Matrix expectedInv{{0.6, -0.7}, {-0.2, 0.4}};
+    Matrix<d64> A{{4.0, 7.0}, {2.0, 6.0}};  // det = 10
+    Matrix<d64> expectedInv{{0.6, -0.7}, {-0.2, 0.4}};
 
     SECTION("inverse() is correct and A * A^-1 == I") {
-        Matrix inv = A.inverse();
+        Matrix<d64> inv = A.inverse();
         REQUIRE(inv.isApprox(expectedInv, 1e-9, 0.0));
-        REQUIRE((A * inv).isApprox(Matrix::identity(2), 1e-9, 0.0));
+        REQUIRE((A * inv).isApprox(Matrix<d64>::identity(2), 1e-9, 0.0));
     }
 
     SECTION("cofactorInversion() agrees with inverse()") {
@@ -409,13 +409,13 @@ TEST_CASE("Matrix inverse", "[matrix][inverse]") {
     }
 
     SECTION("throws for a singular matrix") {
-        Matrix Singular{{1.0, 2.0}, {2.0, 4.0}};
+        Matrix<d64> Singular{{1.0, 2.0}, {2.0, 4.0}};
         REQUIRE_THROWS_AS(Singular.inverse(), std::runtime_error);
         REQUIRE_THROWS_AS(Singular.cofactorInversion(), std::invalid_argument);
     }
 
     SECTION("throws for a non-square matrix") {
-        Matrix Rect(2, 3, 0.0);
+        Matrix<d64> Rect(2, 3, 0.0);
         REQUIRE_THROWS_AS(Rect.inverse(), std::invalid_argument);
         REQUIRE_THROWS_AS(Rect.cofactorInversion(), std::invalid_argument);
     }
@@ -423,31 +423,31 @@ TEST_CASE("Matrix inverse", "[matrix][inverse]") {
 
 TEST_CASE("Matrix eigenpair power-iteration methods", "[matrix][eigenpair]") {
     // Symmetric, well-separated eigenvalues: 1 and 3.
-    Matrix A{{2.0, 1.0}, {1.0, 2.0}};
+    Matrix<d64> A{{2.0, 1.0}, {1.0, 2.0}};
 
     SECTION("largestEigenPair finds the dominant eigenvalue") {
         auto [val, vec] = A.largestEigenPair(100);
         REQUIRE(std::fabs(val - 3.0) < 1e-6);
-        Vec residual = (A * vec) - (vec * val);
+        Vec<d64> residual = (A * vec) - (vec * val);
         REQUIRE(residual.lnorm(2) < 1e-6);
     }
 
     SECTION("smallestEigenPair finds the smallest-magnitude eigenvalue") {
         auto [val, vec] = A.smallestEigenPair(100);
         REQUIRE(std::fabs(val - 1.0) < 1e-6);
-        Vec residual = (A * vec) - (vec * val);
+        Vec<d64> residual = (A * vec) - (vec * val);
         REQUIRE(residual.lnorm(2) < 1e-6);
     }
 
     SECTION("eigenPairClosestTo finds the nearest eigenvalue") {
         auto [val, vec] = A.eigenPairClosestTo(1.8, 100);  // closer to 1 than to 3
         REQUIRE(std::fabs(val - 1.0) < 1e-6);
-        Vec residual = (A * vec) - (vec * val);
+        Vec<d64> residual = (A * vec) - (vec * val);
         REQUIRE(residual.lnorm(2) < 1e-6);
     }
 
     SECTION("throws for a non-square matrix") {
-        Matrix Rect(2, 3, 0.0);
+        Matrix<d64> Rect(2, 3, 0.0);
         REQUIRE_THROWS_AS(Rect.largestEigenPair(), std::invalid_argument);
         REQUIRE_THROWS_AS(Rect.smallestEigenPair(), std::invalid_argument);
         REQUIRE_THROWS_AS(Rect.eigenPairClosestTo(1.0), std::invalid_argument);
@@ -462,35 +462,35 @@ TEST_CASE("Matrix reductions", "[matrix][reduce]") {
     }
 
     SECTION("sum(axis=0) sums columns into a row vector") {
-        Matrix colSums = A.sum(0);
+        Matrix<d64> colSums = A.sum(0);
         REQUIRE(colSums.rows() == 1);
         REQUIRE(colSums.cols() == 3);
-        REQUIRE(colSums == Matrix({{5.0, 7.0, 9.0}}));
+        REQUIRE(colSums == Matrix<d64>({{5.0, 7.0, 9.0}}));
     }
 
     SECTION("sum(axis=1) sums rows into a column vector") {
-        Matrix rowSums = A.sum(1);
+        Matrix<d64> rowSums = A.sum(1);
         REQUIRE(rowSums.rows() == 2);
         REQUIRE(rowSums.cols() == 1);
-        REQUIRE(rowSums == Matrix({{6.0}, {15.0}}));
+        REQUIRE(rowSums == Matrix<d64>({{6.0}, {15.0}}));
     }
 
     SECTION("max and min") {
-        Matrix B{{1.0, -7.0, 3.0}, {4.0, 5.0, -2.0}};
-        REQUIRE(B.max() == 5.0);
-        REQUIRE(B.min() == -7.0);
+        Matrix<d64> B{{1.0, -7.0, 3.0}, {4.0, 5.0, -2.0}};
+        REQUIRE(B.max() == -7.0);
+        REQUIRE(B.min() == 1.0);
     }
 }
 
 TEST_CASE("Matrix slicing", "[matrix][slice]") {
-    Matrix A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
+    Matrix<d64> A{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}};
 
     SECTION("sliceByRows correctness") {
-        REQUIRE(A.sliceByRows(1, 3) == Matrix({{4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}}));
+        REQUIRE(A.sliceByRows(1, 3) == Matrix<d64>({{4.0, 5.0, 6.0}, {7.0, 8.0, 9.0}}));
     }
 
     SECTION("sliceByCols correctness") {
-        REQUIRE(A.sliceByCols(0, 2) == Matrix({{1.0, 2.0}, {4.0, 5.0}, {7.0, 8.0}}));
+        REQUIRE(A.sliceByCols(0, 2) == Matrix<d64>({{1.0, 2.0}, {4.0, 5.0}, {7.0, 8.0}}));
     }
 
     SECTION("throws when start >= finish") {
@@ -504,23 +504,23 @@ TEST_CASE("Matrix slicing", "[matrix][slice]") {
 }
 
 TEST_CASE("Matrix matmulInto", "[matrix][matmulInto]") {
-    Matrix A{{1.0, 2.0}, {3.0, 4.0}};
-    Matrix B{{5.0, 6.0}, {7.0, 8.0}};
+    Matrix<d64> A{{1.0, 2.0}, {3.0, 4.0}};
+    Matrix<d64> B{{5.0, 6.0}, {7.0, 8.0}};
 
     SECTION("writes the correct product into a pre-sized output") {
-        Matrix out(2, 2, 0.0);
+        Matrix<d64> out(2, 2, 0.0);
         A.matmulInto(B, out);
-        REQUIRE(out == Matrix({{19.0, 22.0}, {43.0, 50.0}}));
+        REQUIRE(out == Matrix<d64>({{19.0, 22.0}, {43.0, 50.0}}));
     }
 
     SECTION("throws on inner-dimension mismatch") {
-        Matrix Bad(3, 3, 0.0);
-        Matrix out(2, 3, 0.0);
+        Matrix<d64> Bad(3, 3, 0.0);
+        Matrix<d64> out(2, 3, 0.0);
         REQUIRE_THROWS_AS(A.matmulInto(Bad, out), std::invalid_argument);
     }
 
     SECTION("throws when the output shape doesn't match") {
-        Matrix wrongOut(3, 3, 0.0);
+        Matrix<d64> wrongOut(3, 3, 0.0);
         REQUIRE_THROWS_AS(A.matmulInto(B, wrongOut), std::invalid_argument);
     }
 }

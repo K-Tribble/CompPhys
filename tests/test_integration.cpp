@@ -1,3 +1,11 @@
+// Catch2 (v3) test suite for calculus::differentiation functions
+//
+// Build notes:
+//   - Requires Catch2 v3 (link against Catch2::Catch2WithMain) plus the
+//     linalg library sources (matrix.cpp, vec.cpp, linalg_interop.cpp).
+//   - Include paths must expose both "calculus/differentiation.hpp" and the
+//     top-level "types.hpp" / "constants.hpp" used by those headers.
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 

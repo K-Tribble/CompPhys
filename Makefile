@@ -46,6 +46,7 @@ TEST_SRC = tests/test_vec.cpp \
 	tests/test_matrix.cpp \
 	tests/test_interop.cpp \
 	tests/test_differentiation.cpp \
+	src/calculus/differentiation.cpp \
 	tests/test_integration.cpp \
 	tests/test_nonlin.cpp \
 	tests/test_linalg_solve.cpp
