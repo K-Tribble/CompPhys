@@ -1,13 +1,21 @@
 # Compiler
-CXX = g++
+CXX = clang++
+
+OPENMP_PREFIX := $(shell brew --prefix libomp)
 
 # Compiler flags
-CXXFLAGS = -std=c++20 -Wall -Wextra -Iinclude -O3
+CXXFLAGS = -std=c++20 -Wall -Wextra -O2 \
+		   -Iinclude \
+           -Xpreprocessor -fopenmp \
+           -I$(OPENMP_PREFIX)/include
+
+# Linker flags
+LDFLAGS = -L$(OPENMP_PREFIX)/lib -lomp
 
 # Source and object files
 SRC = src/main.cpp \
-	src/interpolation.cpp \
-	src/calculus/differentiation.cpp
+      src/interpolation.cpp \
+      src/calculus/differentiation.cpp
 
 OBJ = $(SRC:src/%.cpp=build/%.o)
 
@@ -19,7 +27,7 @@ all: $(TARGET)
 
 # Link object files
 $(TARGET): $(OBJ)
-	$(CXX) $(OBJ) -o $(TARGET)
+	$(CXX) $(OBJ) $(LDFLAGS) -o $@
 
 # Compile source files into build/
 build/%.o: src/%.cpp
@@ -43,13 +51,13 @@ count:
 		\( -name '*.cpp' -o -name '*.hpp' -o -name '*.tpp' \) -print0 | xargs -0 wc -l
 
 TEST_SRC = tests/test_vec.cpp \
-	tests/test_matrix.cpp \
-	tests/test_interop.cpp \
-	tests/test_differentiation.cpp \
-	src/calculus/differentiation.cpp \
-	tests/test_integration.cpp \
-	tests/test_nonlin.cpp \
-	tests/test_linalg_solve.cpp
+           tests/test_matrix.cpp \
+           tests/test_interop.cpp \
+           tests/test_differentiation.cpp \
+           src/calculus/differentiation.cpp \
+           tests/test_integration.cpp \
+           tests/test_nonlin.cpp \
+           tests/test_linalg_solve.cpp
 
 TEST_TARGET = build/tests
 
@@ -63,6 +71,7 @@ $(TEST_TARGET): $(TEST_SRC)
 		-L$(shell brew --prefix catch2)/lib \
 		$(TEST_SRC) \
 		-lCatch2Main -lCatch2 \
+		$(LDFLAGS) \
 		-o $(TEST_TARGET)
 
 .PHONY: all run clean rebuild count test
