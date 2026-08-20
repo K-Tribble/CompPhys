@@ -18,6 +18,18 @@ Vec<T> Vec<T>::basis(u32 n, u32 i) {
 }
 
 template <Scalar T>
+template <Scalar U>
+Vec<U> Vec<T>::cast() const {
+    std::vector<U> out;
+    out.reserve(data_.size());
+    for (T& v : data_) {
+        out.emplace_back(scalar_cast<U>(v));
+    }
+
+    return Vec<U>(std::move(out));
+}
+
+template <Scalar T>
 Vec<T> Vec<T>::random(u32 n) {
     return Vec<T>::random(n, std::uniform_real_distribution<RealType<T>>(-1.0, 1.0));
 }

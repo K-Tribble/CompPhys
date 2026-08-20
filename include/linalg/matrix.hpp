@@ -41,6 +41,9 @@ public:
     static Matrix<T> identity(u32 n);
     static Matrix<T> diagonal(const std::vector<T>& diag);
 
+    template <Scalar U>
+    Matrix<U> cast() const;
+
     T& operator()(u32 r, u32 c);
     T operator()(u32 r, u32 c) const;
     // Return ith row as a vector

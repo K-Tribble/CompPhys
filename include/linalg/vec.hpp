@@ -31,6 +31,9 @@ public:
 
     std::span<const T> span() const {return data_;}
 
+    template <Scalar U>
+    Vec<U> cast() const;
+
     // templated random vector instantation that accepts any distribution
     // for a complex valued vector the real and imaginary parts of each entry
     // will be sampled from the distribution

@@ -64,6 +64,18 @@ Matrix<T> Matrix<T>::diagonal(const std::vector<T>& diag) {
 }
 
 template <Scalar T>
+template <Scalar U>
+Matrix<U> Matrix<T>::cast() const {
+    std::vector<U> out;
+    out.reserve(data_.size())
+    for (T& v : data_) {
+        out.emplace_back(scalar_cast<U>(v));
+    }
+
+    return Matrix<U>(rows_, cols_, std::move(out));
+}
+
+template <Scalar T>
 u32 Matrix<T>::linearIndex(u32 r, u32 c) const {
     if (r >= rows_ || c >= cols_) {
         throw std::out_of_range("matrix index out of range");
