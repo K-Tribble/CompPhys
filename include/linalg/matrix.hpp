@@ -111,7 +111,7 @@ public:
     Matrix<T> inverse() const;
     Matrix<T> cofactorInversion() const;
 
-    // The following methdos only find the largest modulus real eigenvalue and its associated real eigenvector
+    // The following methdo only find the largest modulus real eigenvalue and its associated real eigenvector
     // returns the eigenvalue with the largest modulus and its associated normalized eigenvector
     std::pair<RealType<T>, Vec<T>> largestEigenPair(u32 power = 50) const;
     // returns the eigenvalue with the smalles modulus and its associated normalized eigenvector

@@ -268,6 +268,10 @@ bool Matrix<T>::isHermitian(RealType<T> absTol, RealType<T> relTol) const {
     if (rows_ != cols_) return false;
 
     for (u32 i = 0; i < rows_; ++i) {
+        // check for real diagonal entries
+        if (std::abs(std::imag(*this)) > kDefaultAbsTol) {
+            return false;
+        }
         for (u32 j = i + 1; j < cols_; ++j) {
             T a = (*this)(i, j);
             T b = conjugate((*this)(j, i));
@@ -843,7 +847,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::largestEigenPair(u32 power) const {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
 
-    Vec<RealType<T>> v = Vec<T>::random(rows_);
+    Vec<T> v = Vec<T>::random(rows_);
 
     for (u32 i = 0; i < power; ++i) {
         v = (*this) * v;
@@ -851,7 +855,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::largestEigenPair(u32 power) const {
     }
 
     v.normalize(); // normalized eigenvector
-    RealType<T> eigenVal = v.inner(((*this) * v));
+    RealType<T> eigenVal = std::real(v.inner(((*this) * v)));
 
     return {eigenVal, v};
 }
@@ -862,7 +866,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::smallestEigenPair(u32 power) const {
         throw std::invalid_argument("matrix must be square to have eigenvalues");
     }
 
-    Vec<RealType<T>> v = Vec<T>::random(rows_);
+    Vec<T> v = Vec<T>::random(rows_);
 
     LUResult<T> A_res = LUDecomp();
 
@@ -872,7 +876,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::smallestEigenPair(u32 power) const {
     }
 
     v.normalize();
-    RealType<T> eigenVal = 1.0 / v.inner(solve::lu(A_res, v));
+    RealType<T> eigenVal = 1.0 / std::real(v.inner(solve::lu(A_res, v)));
 
     return {eigenVal, v};
 }
@@ -886,7 +890,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::eigenPairClosestTo(RealType<T> alpha, 
     Matrix<T> A_prime = (*this) - (identity(rows_) * alpha);
     LUResult<T> A_prime_res = A_prime.LUDecomp();
 
-    Vec<RealType<T>> v = Vec<T>::random(rows_);
+    Vec<T> v = Vec<T>::random(rows_);
     
     for (u32 i = 0; i < power; ++i) {
         v = solve::lu(A_prime_res, v);
@@ -894,7 +898,7 @@ std::pair<RealType<T>, Vec<T>> Matrix<T>::eigenPairClosestTo(RealType<T> alpha, 
     }
 
     v.normalize();
-    RealType<T> eigenVal = alpha + 1.0 / v.inner(solve::lu(A_prime_res, v));
+    RealType<T> eigenVal = alpha + 1.0 / std::real(v.inner(solve::lu(A_prime_res, v)));
     
     return {eigenVal, v};
 }
