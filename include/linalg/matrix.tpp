@@ -67,7 +67,7 @@ template <Scalar T>
 template <Scalar U>
 Matrix<U> Matrix<T>::cast() const {
     std::vector<U> out;
-    out.reserve(data_.size())
+    out.reserve(data_.size());
     for (T& v : data_) {
         out.emplace_back(scalar_cast<U>(v));
     }

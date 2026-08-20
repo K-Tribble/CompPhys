@@ -54,7 +54,7 @@ constexpr U scalar_cast(const T& x) {
     if constexpr (std::is_same_v<T, U>) {
         return x;
     } else if constexpr (is_complex_v<U>) {
-        return U(x) // real-> complex or complex->complex 
+        return U(x); // real-> complex or complex->complex 
     } else {
         static_assert(!is_complex_v<T>, "scalar_cast: cannot implicitely convert complex to real; use std::real(x) explicitly");
         return static_cast<U>(x);
