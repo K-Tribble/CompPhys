@@ -82,7 +82,7 @@ namespace differentiate {
         }
 
         #pragma omp parallel for
-        for (u32 k = 0; k < pairs.size() ++k) {
+        for (u32 k = 0; k < pairs.size(); ++k) {
             auto [i, j] = pairs[k];
             d64 rawi = h * std::max(d64(1.0), std::abs(x(i)));
             d64 si = (x(i) + rawi) - x(i);
