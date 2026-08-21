@@ -2,8 +2,8 @@
 #include <vector>
 #include <span>
 #include "types.hpp"
-#include "vec.hpp"
-#include "matrix.hpp"
+#include "linalg/vec.hpp"
+#include "linalg/matrix.hpp"
 #include "constants.hpp"
 #include <omp.h>
 
