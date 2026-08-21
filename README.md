@@ -284,7 +284,7 @@ auto second_deriv = calculus::differentiate::secondDeriv(x, y);   // Should be ~
 auto f = [](double x) { return std::sin(x); };
 
 // Integrate using trapezoidal rule with adaptive refinement
-auto trapzresult = calculus::integrate::trapezoidal(f, 0.0, M_PI, 1e-10, 1000);
+auto trapzResult = calculus::integrate::trapezoidal(f, 0.0, M_PI, 1e-10, 1000);
 if (trapzResult.converged) {
     std::cout << "Integral = " << trapzResult.value << std::endl;
     std::cout << "Error: " << trapzResult.finalError << std::endl;
@@ -320,14 +320,14 @@ if (bisectionResult.converged && bisectionResult.foundRoot) {
     std::cout << "Iterations: " << bisectionResult.numIter << std::endl;
 }
 // Find root using newton-raphson method
-auto fprime = [](double x) { return 2.0 * x};
+auto fprime = [](double x) { return 2.0 * x;};
 auto newtonResult = nonlin::newton(f, fprime, 2.0);
 if (newtonResult.converged && newtonResult.foundRoot) {
     std::cout << "Root found at x = " << newtonResult.root << std::endl;
     std::cout << "f(x) = " << newtonResult.function_val << std::endl;
     std::cout << "Iterations: " << newtonResult.numIter << std::endl;
 }
-find root using secant method
+// find root using secant method
 auto secantResult = nonlin::secant(f, 3.0, 2.0, 1e-10, 1e-10, 1000);
 if (secantResult.converged && secantResult.foundRoot) {
     std::cout << "Root found at x = " << secantResult.root << std::endl;
