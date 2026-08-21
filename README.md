@@ -13,6 +13,7 @@ This project contains implementations developed while studying the Computational
 - Factory methods: `zeros()`, `ones()`, `basis()`, `random()`
 - Arithmetic and algebraic operations
 - Support for custom random distributions
+- Includes methods for begin and end pointers to have support for range concepts
 
 **Matrix Operations** (`linalg/matrix.hpp`)
 - Dense matrix class supporting various operations
@@ -58,6 +59,21 @@ This project contains implementations developed while studying the Computational
 - Vectorized differentiation supporting arrays and spans
 - Automatic scheme selection for boundary handling
 - Customizable step size parameter
+- Supports parallelized gradient computation of a function of multiple variables
+- Supports parallelized hessian computation of a function of multiple variables
+- Both above are parallelized with OMP
+
+**Optimization** ('calculus/optimize.hpp')
+- Includes two roust iterative methods to minimize a fucntion
+ - **Gradient Descent with adaptive stepsize** - linear convergence
+    - Calculates the minimum of a function with gradient descent
+    - Uses parallelized gradient method
+    - Stepsize is calculated at every iteration
+    - Step size is calculated by a backtracking line search, such that the function decreases enough to meet the Armijo condition
+    - This guarentees stability by preventing overshooting and stalling
+ - **Newtons Method with Levenberg-Marquarst regularization** - quadratic convergence
+    - Calculates the minimum of a function with Newtons methodm uses LV regularization to guarentee stability when the hessian is not positive definite
+    - Uses parallelized hessian method
 
 **Numerical Integration** (`calculus/integration.hpp`)
 - Trapezoidal and Simpsons rule with adaptive refinement
@@ -129,9 +145,10 @@ CompPhys/
 │   ├── calculus/
 │   │   ├── differentiation.hpp  # Numerical differentiation
 │   │   └── integration.hpp      # Numerical integration
+│   │   ├── optimize.hpp         # Numerical optimization of functions
 │   └── linalg/
 │       ├── matrix.hpp              # Matrix class and operations
-│       ├── matrix.tpp              # Matrix class mplementations
+│       ├── matrix.tpp              # Matrix class implementations
 │       ├── vec.hpp                 # Vector class and operations
 │       ├── vec.tpp                 # Vector implementations
 │       ├── linalg_common.hpp       # Shared linear algebra utilities
