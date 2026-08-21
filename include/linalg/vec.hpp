@@ -31,6 +31,13 @@ public:
 
     std::span<const T> span() const {return data_;}
 
+    auto begin() { return data_.begin(); }
+    auto begin() const { return data_.begin(); }
+    auto end() { return data_.end(); }
+    auto end() const { return data_.end(); }
+    auto cbegin() const { return data_.cbegin(); }
+    auto cend() const { return data_.cend(); }
+
     template <Scalar U>
     Vec<U> cast() const;
 
