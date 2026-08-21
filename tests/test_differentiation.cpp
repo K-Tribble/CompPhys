@@ -8,6 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/catch_approx.hpp>
 
 #include "calculus/differentiation.hpp"
 
@@ -301,4 +302,47 @@ TEST_CASE("Differentiation rejects invalid input",
             std::invalid_argument
         );
     }
+}
+
+TEST_CASE("Gradient of multivariable quadratic matches analytic result", "[differentiation][gradient]") {
+    // f(x, y, z) = x^2 + 2y^2 + 3z^2  =>  grad f = (2x, 4y, 6z)
+    auto f = [](const linalg::Vec<d64>& v) {
+        return v(0)*v(0) + 2*v(1)*v(1) + 3*v(2)*v(2);
+    };
+
+    linalg::Vec<d64> point{1.0, 2.0, 3.0};
+    auto gradient = calculus::differentiate::grad(f, point, 1e-5);
+
+    REQUIRE(gradient.size() == 3);
+    REQUIRE(gradient(0) == Catch::Approx(2.0).epsilon(1e-4));
+    REQUIRE(gradient(1) == Catch::Approx(8.0).epsilon(1e-4));
+    REQUIRE(gradient(2) == Catch::Approx(18.0).epsilon(1e-4));
+}
+
+TEST_CASE("Hessian of quadratic form matches analytic result", "[differentiation][hessian]") {
+    // f(x, y) = x^2 + xy + y^2  =>  H = [[2, 1], [1, 2]] everywhere
+    auto f = [](const linalg::Vec<d64>& v) {
+        return v(0)*v(0) + v(0)*v(1) + v(1)*v(1);
+    };
+
+    linalg::Vec<d64> point{1.0, 1.0};
+    auto hessian = calculus::differentiate::hess(f, point, 1e-4);
+
+    REQUIRE(hessian(0, 0) == Catch::Approx(2.0).epsilon(1e-3));
+    REQUIRE(hessian(0, 1) == Catch::Approx(1.0).epsilon(1e-3));
+    REQUIRE(hessian(1, 0) == Catch::Approx(1.0).epsilon(1e-3));
+    REQUIRE(hessian(1, 1) == Catch::Approx(2.0).epsilon(1e-3));
+}
+
+TEST_CASE("Gradient on a non-quadratic function", "[differentiation][gradient]") {
+    // f(x, y) = sin(x)cos(y)  =>  grad f = (cos(x)cos(y), -sin(x)sin(y))
+    auto f = [](const linalg::Vec<d64>& v) {
+        return std::sin(v(0)) * std::cos(v(1));
+    };
+
+    linalg::Vec<d64> point{0.5, 0.3};
+    auto gradient = calculus::differentiate::grad(f, point, 1e-5);
+
+    REQUIRE(gradient(0) == Catch::Approx(std::cos(0.5)*std::cos(0.3)).epsilon(1e-4));
+    REQUIRE(gradient(1) == Catch::Approx(-std::sin(0.5)*std::sin(0.3)).epsilon(1e-4));
 }

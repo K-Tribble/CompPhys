@@ -64,15 +64,15 @@ This project contains implementations developed while studying the Computational
 - Both above are parallelized with OMP
 
 **Optimization** ('calculus/optimize.hpp')
-- Includes two roust iterative methods to minimize a fucntion
+- Includes two robust iterative methods to minimize a function
  - **Gradient Descent with adaptive stepsize** - linear convergence
     - Calculates the minimum of a function with gradient descent
     - Uses parallelized gradient method
     - Stepsize is calculated at every iteration
     - Step size is calculated by a backtracking line search, such that the function decreases enough to meet the Armijo condition
-    - This guarentees stability by preventing overshooting and stalling
- - **Newtons Method with Levenberg-Marquarst regularization** - quadratic convergence
-    - Calculates the minimum of a function with Newtons methodm uses LV regularization to guarentee stability when the hessian is not positive definite
+    - This guarantees stability by preventing overshooting and stalling
+ - **Newtons Method with Levenberg-Marquardt regularization** - quadratic convergence
+    - Calculates the minimum of a function with Newtons method using LV regularization to guarantee stability when the hessian is not positive definite
     - Uses parallelized hessian method
 
 **Numerical Integration** (`calculus/integration.hpp`)
@@ -144,8 +144,8 @@ CompPhys/
 │   ├── interpolation.hpp      # Interpolation methods
 │   ├── calculus/
 │   │   ├── differentiation.hpp  # Numerical differentiation
-│   │   └── integration.hpp      # Numerical integration
 │   │   ├── optimize.hpp         # Numerical optimization of functions
+│   │   └── integration.hpp      # Numerical integration
 │   └── linalg/
 │       ├── matrix.hpp              # Matrix class and operations
 │       ├── matrix.tpp              # Matrix class implementations
@@ -405,7 +405,14 @@ Tests are located in the `tests/` directory and validate correctness of implemen
 ### Differentiation Schemes
 - **Central Difference** (O(h²)) - highest accuracy, requires function at symmetric points
 - **Forward Difference** (O(h)) - useful for causality-constrained problems
-- **Backward Difference** (O(h)) - alternative to forward difference
+- **Backward Difference** (O(h)) - alternative to forward 
+- **Gradient** - estimates the gradient of a function
+- **Hessian** - estimates the hessian of a function
+
+### Optimization
+- **Gradient descent** O(h) - minimizes a function, uses backtracking line search for stability
+- **Newtons Method** O(h²) - minimizes a function, uses Levenberg-Marquadt regularization for stability
+
 
 ### Integration Methods
 - **Trapezoidal Rule** - simple linear approximation between points

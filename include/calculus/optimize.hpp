@@ -1,7 +1,7 @@
 #pragma once
 
-#include "matrix.hpp"
-#include "vec.hpp"
+#include "linalg/matrix.hpp"
+#include "linalg/vec.hpp"
 #include "calculus/differentiation.hpp"
 #include "types.hpp"
 #include "constants.hpp"
@@ -83,7 +83,7 @@ struct OpResult {
         return res;
     }
 
-    // This finds the minimum of a function using Newtons method with Levenberg-Marquarst regularization.
+    // This finds the minimum of a function using Newtons method with Levenberg-Marquardt regularization.
     // This allows the minimum to be found even when the process has to pass throguh areas where the hessian is not 
     // positive definite. If its not positive definite and has a negative eigenvalue the hessian can point the gradient
     // in a useless direction. By shifting H by lambda * I, it guarantees positive definiteness which gives a descent direction
