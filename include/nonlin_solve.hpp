@@ -189,5 +189,134 @@ namespace nonlin {
         return res;
     }
 
+    // Brent's method: combines bisection, secant, and inverse quadratic interpolation (IQI).
+    // IQI is done by reusing lagrangePolynomial() from interpolation.hpp: instead of
+    // interpolating f as a function of x, the roles are swapped to interpolate x as a
+    // function of f through (fa,a), (fb,b), (fc,c), and evaluated at f = 0.
+    // xl and xr must bracket the root, i.e. func(xl) and func(xr) must have opposite signs.
+    template <typename F>
+    inline RootIterResult brent(F&& func, d64 xl, d64 xr, d64 functionTol = kIterStopCondition, d64 xTol = kIterStopCondition, u32 maxIter = 1000) {
+        RootIterResult res;
+ 
+        d64 a = xl;
+        d64 b = xr;
+        d64 fa = func(a);
+        d64 fb = func(b);
+ 
+        if (fa == 0) {
+            res.converged = true;
+            res.foundRoot = true;
+            res.numIter = 0;
+            res.function_val = fa;
+            res.finalErr = 0;
+            res.root = a;
+            return res;
+        }
+ 
+        if (fb == 0) {
+            res.converged = true;
+            res.foundRoot = true;
+            res.numIter = 0;
+            res.function_val = fb;
+            res.finalErr = 0;
+            res.root = b;
+            return res;
+        }
+ 
+        if (fa * fb > 0) {
+            throw std::invalid_argument("initial right and left values must have opposite signs");
+        }
+ 
+        // b is always the current best estimate: |f(b)| <= |f(a)|
+        if (std::fabs(fa) < std::fabs(fb)) {
+            std::swap(a, b);
+            std::swap(fa, fb);
+        }
+ 
+        d64 c = a;
+        d64 fc = fa;
+        d64 d = c; // only meaningful once a bisection step has actually been taken
+        bool mflag = true;
+ 
+        auto iqi = lagrangePolynomial();
+ 
+        d64 error = std::fabs(b - a);
+        u32 numIter = 0;
+        bool converged = false;
+        bool foundRoot = false;
+ 
+        while (numIter < maxIter) {
+ 
+            d64 s;
+ 
+            if (fa != fc && fb != fc) {
+                // inverse quadratic interpolation: interpolate x(f) through
+                // (fa,a), (fb,b), (fc,c) and evaluate at f = 0
+                std::array<d64, 3> fPts = {fa, fb, fc};
+                std::array<d64, 3> xPts = {a, b, c};
+                s = iqi(0.0, fPts, xPts);
+            } else {
+                // secant step
+                s = b - fb * (b - a) / (fb - fa);
+            }
+ 
+            d64 bisectionMid = (3 * a + b) / 4;
+            bool cond1 = (s < std::min(bisectionMid, b)) || (s > std::max(bisectionMid, b));
+            bool cond2 = mflag && std::fabs(s - b) >= std::fabs(b - c) / 2;
+            bool cond3 = !mflag && std::fabs(s - b) >= std::fabs(c - d) / 2;
+            bool cond4 = mflag && std::fabs(b - c) < xTol;
+            bool cond5 = !mflag && std::fabs(c - d) < xTol;
+ 
+            if (cond1 || cond2 || cond3 || cond4 || cond5) {
+                s = (a + b) / 2;
+                mflag = true;
+            } else {
+                mflag = false;
+            }
+ 
+            d64 fs = func(s);
+ 
+            error = std::fabs(s - b);
+ 
+            d = c;
+            c = b;
+            fc = fb;
+ 
+            if (fa * fs < 0) {
+                b = s;
+                fb = fs;
+            } else {
+                a = s;
+                fa = fs;
+            }
+ 
+            if (std::fabs(fa) < std::fabs(fb)) {
+                std::swap(a, b);
+                std::swap(fa, fb);
+            }
+ 
+            ++numIter;
+ 
+            if (std::fabs(fb) < functionTol) {
+                converged = true;
+                foundRoot = true;
+                break;
+            } else if (error < xTol) {
+                converged = true;
+                foundRoot = false;
+                break;
+            }
+        }
+ 
+        res.converged = converged;
+        res.foundRoot = foundRoot;
+        res.numIter = numIter;
+        res.function_val = func(b);
+        res.finalErr = error;
+        res.root = b;
+ 
+        return res;
+    }
+
 
 } // namespace nonlin

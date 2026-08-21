@@ -433,6 +433,12 @@ Tests are located in the `tests/` directory and validate correctness of implemen
   - Implements the Newton-Raphson iteration method without an analytic derivative
   - Uses finite difference method to approximate derivative
   - Requires two initial guesses
+- **Brents Method** - Combines bisection, secant, and inverse quadratic interpolation.
+- It maintains a bracket [a,b] where f(a) and f(b) have opposite signs, so a root is guaranteed to lie inside (assuming continuity).
+- It usually takes a faster secant/interpolation step, but if that step looks unreliable, it falls back to bisection.
+- Advantages: much faster than pure bisection in typical cases, while retaining bisection's robustness.
+- Requirements: f must be continuous over the bracket and f(a)f(b)<0.
+- Key idea: use interpolation when it is safe; otherwise, shrink the bracket with bisection.
 
 ### Interpolation
 - **Linear Interpolation** - returns a point along a straight line between the two neighboring points
