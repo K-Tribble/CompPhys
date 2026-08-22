@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include "types.hpp"
+#include "interpolation.hpp"
 #include "constants.hpp"
 
 namespace nonlin {
