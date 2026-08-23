@@ -31,21 +31,30 @@ struct SecantArgs {
     d64 x1;
 };
 
+struct BrentArgs {
+    d64 xl;
+    d64 xr;
+};
+
 template <typename F>
-static void testNonLinFuncs(F&& f, BisectArgs ba, NewtonArgs na, SecantArgs sa) {
+static void testNonLinFuncs(F&& f, BisectArgs ba, NewtonArgs na, SecantArgs sa, BrentArgs brenta) {
     RootIterResult br = bisection(f, ba.xl, ba.xr);
     RootIterResult nr = newton(f, na.derivf, na.x0);
     RootIterResult sr = secant(f, sa.x0, sa.x1);
+    RootIterResult brentr = brent(f, brenta.xl, brenta.xr);
 
     REQUIRE_THAT(br.function_val, WithinAbs(0.0, 1e-11));
     REQUIRE_THAT(nr.function_val, WithinAbs(0.0, 1e-11));
     REQUIRE_THAT(sr.function_val, WithinAbs(0.0, 1e-11));
+    REQUIRE_THAT(brentr.function_val, WithinAbs(0.0, 1e-11));
     REQUIRE(br.converged);
     REQUIRE(nr.converged);
     REQUIRE(sr.converged);
+    REQUIRE(brentr.converged);
     REQUIRE(br.foundRoot);
     REQUIRE(nr.foundRoot);
     REQUIRE(sr.foundRoot);
+    REQUIRE(brentr.foundRoot);
 }
 
 auto f1 = [](d64 x) {
@@ -88,8 +97,8 @@ auto fprime5 = [](d64 x) -> d64 {
     return std::exp(x) - 4.0;
 };
 
-TEST_CASE("x^2 - 17") {testNonLinFuncs(f1, {4.0, 20.0}, {24.0, fprime1}, {20.0, 18.0});}
-TEST_CASE("sin(x^2) - 1 / (x + 5)") {testNonLinFuncs(f2, {3.6, 4.0}, {1.5, fprime2}, {1.4, 1.6});}
-TEST_CASE("cos(x/2) - x") {testNonLinFuncs(f3, {-0.5, 2.0}, {0.5, fprime3}, {1.8, 1.3});}
-TEST_CASE("x^2 - 2x - 4") {testNonLinFuncs(f4, {-1.36, -1.0}, {-5.5, fprime4}, {2.5, 2.8});}
-TEST_CASE("e^x - 4x") {testNonLinFuncs(f5, {2.0, 3.0}, {24.0, fprime5}, {2.3, 2.4});}
+TEST_CASE("x^2 - 17") {testNonLinFuncs(f1, {4.0, 20.0}, {24.0, fprime1}, {20.0, 18.0}, {4.0, 20.0});}
+TEST_CASE("sin(x^2) - 1 / (x + 5)") {testNonLinFuncs(f2, {3.6, 4.0}, {1.5, fprime2}, {1.4, 1.6}, {3.6, 4.0});}
+TEST_CASE("cos(x/2) - x") {testNonLinFuncs(f3, {-0.5, 2.0}, {0.5, fprime3}, {1.8, 1.3}, {-0.5, 2.0});}
+TEST_CASE("x^2 - 2x - 4") {testNonLinFuncs(f4, {-1.36, -1.0}, {-5.5, fprime4}, {2.5, 2.8}, {-1.36, -1.0});}
+TEST_CASE("e^x - 4x") {testNonLinFuncs(f5, {2.0, 3.0}, {24.0, fprime5}, {2.3, 2.4}, {2.0, 3.0});}
