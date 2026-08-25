@@ -30,8 +30,8 @@ TEST_CASE("Newton's method with LM regularization converges on Rosenbrock", "[op
     auto result = calculus::optimize::newtonsLM(f, x0, 1e-8);
 
     REQUIRE(result.converged);
-    REQUIRE(result.x_min(0) == Catch::Approx(1.0).epsilon(1e-3));
-    REQUIRE(result.x_min(1) == Catch::Approx(1.0).epsilon(1e-3));
+    REQUIRE(result.x_min(0) == Catch::Approx(1.0).epsilon(1e-9));
+    REQUIRE(result.x_min(1) == Catch::Approx(1.0).epsilon(1e-9));
 }
 
 TEST_CASE("Gradient descent line search never increases the objective", "[optimize][gradient_descent]") {
