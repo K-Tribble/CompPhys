@@ -30,6 +30,21 @@ namespace sample {
                 return logNormConst - 0.5 * sumSq / (sigma_ * sigma_);
             }
 
+            template <std::uniform_random_bit_generator Generator>
+            virtual linalg::Vec<d64> sample(Generator& gen) const override {
+                std::normal_distribution<d64> dist(0.0, sigma_);
+                u32 n = mean_.size();
+                linalg::Vec<d64> x(n);
+                for (u32 i = 0; i < n; ++i) {
+                    x(i) = mean_(i) + dist(gen);
+                }
+                return x;
+            }
+
+            u32 dim() const override {
+                return mean_.size();
+            }
+
             linalg::Vec<d64> sample(std::mt19937& gen) const override {
                 std::normal_distribution<d64> dist(0.0, sigma_);
                 u32 n = mean_.size();
