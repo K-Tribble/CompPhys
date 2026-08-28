@@ -4,6 +4,7 @@
 #include <vector>
 #include <random>
 #include <span>
+#include <limits>
 #include <stdexcept>
 #include "types.hpp"
 #include "constants.hpp"

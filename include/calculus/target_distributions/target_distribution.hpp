@@ -18,16 +18,7 @@ namespace sample {
 
             // Dimensionality of space that x is in
             virtual u32 dim() const = 0;
-    }
-
-    // Adds derivative of log density, required for MALA, HMC, and NUTS
-    class DifferentiableTarget : public TargetDistribution {
-        public:
-            // Gradient of logDensity(x)
-            virtual linalg::Vec<d64> gradLogDensity(const linalg::Vec<d64>& x) const = 0;
-    }
-
-
+    };
 } // namespace sample
 
 } // namespace calculus

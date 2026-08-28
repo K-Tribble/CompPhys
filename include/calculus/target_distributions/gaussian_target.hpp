@@ -8,9 +8,9 @@ namespace sample {
 
     // N-dimensional isotropic gaussian, mean mu, std-ev sigma
 
-    class Gaussian : public DifferentiableTarget {
+    class GaussianTarget : public DifferentiableTarget {
         public:
-            Gaussian(linalg::Vec<d64> mean, d64 sigma) 
+            GaussianTarget(linalg::Vec<d64> mean, d64 sigma) 
                 : mean_(std::move(mean)), sigma_(sigma) {}
 
             d64 logDensity(const linalg::Vec<d64>& x) const override {
@@ -41,7 +41,7 @@ namespace sample {
         private:
             linalg::Vec<d64> mean_;
             d64 sigma_;
-    }
+    };
 
 } // namespace sample
 

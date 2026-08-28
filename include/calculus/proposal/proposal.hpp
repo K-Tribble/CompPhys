@@ -11,7 +11,7 @@ namespace sample {
         public:
             // Draw one exact sample x ~ g, usign supplied generator
             virtual linalg::Vec<d64> sample(std::mt19937& gen) const = 0;
-    }
+    };
 
 } // namespace sample
 
