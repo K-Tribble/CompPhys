@@ -1,7 +1,96 @@
+#pragma once
+
 #include <cmath>
 #include <vector>
+#include <random>
+#include <span>
+#include <stdexcept>
 #include "types.hpp"
 #include "constants.hpp"
+#include "linalg/vec.hpp"
+#include "calculus/target_distributions/target_distribution.hpp"
+#include "calculus/proposal/proposal.hpp"
+
+// Welford's online algorithm: updates a running mean and sum-of-squared-deviations
+// (M2) one sample at a time, in a single pass.
+struct WelfordAccumulator {
+    u32 count = 0;
+    d64 mean = 0.0;
+    d64 M2 = 0.0;
+
+    inline void update(d64 x) {
+        ++count;
+        d64 delta = x - mean;
+        mean += delta / count;
+        d64 delta2 = x - mean;
+        M2 += delta * delta2;
+    }
+
+    // Sample variance (Bessel-corrected). Undefined for count < 2, so callers
+    // should guard on count before calling this.
+    inline d64 variance() const {
+        return M2 / (count - 1);
+    }
+ };
+
+// Accumulator for self-normalized importance sampleing:
+// mu_hat = sum(w_i * f_i) / sum(w_i),   w_i = P(x_i) / q(x_i)
+struct ImportanceAccumulator {
+    u32 count = 0;
+    d64 maxLogWeight = -std::numeric_limits<d64>::infinity();
+    d64 sumW = 0.0;
+    d64 sumWF = 0.0;
+    d64 sumW2 = 0.0;
+    d64 sumW2F = 0.0;
+    d64 sumW2F2 = 0.0;
+
+    inline void update(d64 logWeight, d64 f) {
+        ++count;
+
+        if (logWeight > maxLogWeight) {
+            if (sumW > 0.0) {
+                d64 rescale1 = std::exp(maxLogWeight - logWeight);
+                d64 rescale2 = rescale1 * rescale1;
+
+                sumW *= rescale1;
+                sumWF *= rescale1;
+                sumW2 *= rescale2;
+                sumW2F *= rescale2;
+                sumW2F2 *= rescale2;
+            }
+            maxLogWeight = logWeight;
+        }
+
+        d64 w = std::exp(logWeight - maxLogWeight);
+        d64 w2 = w * w;
+
+        sumW += w;
+        sumWF += w * f;
+        sumW2 += w2;
+        sumW2F += w2 * f;
+        sumW2F2 += w2 * f * f;
+    }
+
+    inline d64 mean() const {
+        return sumWF / sumW;
+    }
+
+    // Delta-method variance estimate of mean() itself:
+    //   Var(mu_hat) ~= sum(w_i^2 (f_i - mu_hat)^2) / (sum w_i)^2
+    inline d64 varianceEstimate() const {
+        d64 mu = mean();
+        d64 num = sumW2F2 - 2.0 * mu * sumW2F + mu * mu * sumW2;
+        return num / (sumW * sumW);
+    }
+
+    // How many equally-weighted samples this weighted sample is
+    // "worth". ESS << count signals weight degeneracy — a handful of
+    // samples dominating the estimate, usually because g is a poor
+    // match to P.
+    inline d64 effectiveSampleSize() const {
+        return (sumW * sumW) / sumW2;
+    }
+};
 
 namespace calculus {
 
@@ -43,8 +132,6 @@ namespace integrate {
             if (err < stopCondition) {
                 converged = true;
                 break;
-            } else if (numIter == maxIter) {
-                converged = false;
             }
 
             ++numIter;
@@ -76,8 +163,8 @@ namespace integrate {
         u32 j = 1; // first iteration in loop is to evaluate I2
         d64 err = 0.0;
         bool converged = false;
-        d64 T_jm1;
-        d64 Sj; 
+        d64 T_jm1 = 0.0;
+        d64 Sj = T1;
 
         while (numIter < maxIter) {
             h /= 2;
@@ -96,8 +183,6 @@ namespace integrate {
                 if (err < stopCondition) {
                     converged = true;
                     break;
-                } else if (numIter == maxIter) {
-                    converged = false;
                 }
             }
 
@@ -116,6 +201,129 @@ namespace integrate {
         return res;
     }
 
+    // Here F needs to be a function that accepts a linalg::Vec<d64>.
+    // Generator is a template parameter (constrained to a real random-bit
+    // generator) rather than owned internally, so callers can inject their
+    // own engine. That matters for two reasons: it makes runs reproducible
+    // for testing against known integrals, and it avoids the surprise that a
+    // function-local static RNG inside a template is actually instantiated
+    // once *per distinct lambda type F*, not shared globally.
+    template <typename F, std::uniform_random_bit_generator Generator>
+    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, Generator& gen, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+        const u32 n = leftBoundaries.size();
+        if (rightBoundaries.size() != n) {
+            throw std::invalid_argument("Boundary arrays must be same size");
+        }
+
+        d64 V = 1.0;
+
+        std::vector<std::uniform_real_distribution<d64>> dists;
+        dists.reserve(n);
+        for (u32 i = 0; i < n; ++i) {
+            const d64 width = rightBoundaries[i] - leftBoundaries[i];
+            if (width <= 0.0) {
+                throw std::invalid_argument("Each right boundary must exceed its matching left boundary");
+            }
+            V *= width;
+            dists.emplace_back(leftBoundaries[i], rightBoundaries[i]);
+        }
+
+        IntegralResult res;
+        bool converged = false;
+
+        linalg::Vec<d64> xj(n);
+        WelfordAccumulator acc;
+        d64 Ival = 0.0;
+        d64 finalErr = 0.0;
+
+        u32 N = 0;
+        while (N < maxN) {
+            ++N;
+
+            for (u32 j = 0; j < n; ++j) {
+                xj(j) = dists[j](gen);
+            }
+            acc.update(func(xj));
+
+            if (N < 2) {
+                continue; // need at least 2 samples for a variance estimate
+            }
+
+            Ival = V * acc.mean;
+            finalErr = V * std::sqrt(acc.variance() / N);
+
+            if (finalErr < stopCondition) {
+                converged = true;
+                break;
+            }
+        }
+
+        res.finalError = finalErr;
+        res.value = Ival;
+        res.numIter = N;
+        res.converged = converged;
+
+        return res;
+    }
+
+    // Convenience overload: owns its own engine, seeded from random_device,
+    // when reproducibility isn't needed.
+    template <typename F>
+    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+        thread_local std::mt19937 gen(std::random_device{}());
+        return mc(std::forward<F>(func), leftBoundaries, rightBoundaries, gen, stopCondition, maxN);
+    }
 } // namespace integrate
+
+namespace sample {
+
+    struct ImportanceSampleResult {
+        bool converged;
+        d64 finalError;
+        d64 value;                // self-normalized estimate of E_P[f]
+        u32 numIter;
+        d64 effectiveSampleSize;  // diagnostic to compare against numIter
+    };
+        
+    // Self-normalized important sampling estimate of E_P[f(X)], X ~ P,
+    // using samples drawn from posposal g. 
+    template <typename F>
+    inline ImportanceSampleResult importanceSample(const TargetDistribution& target, const Proposal& proposal, F&& f,
+        std::mt19937& gen, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+            ImportanceAccumulator acc;
+            bool converged = false;
+
+            u32 N = 0;
+
+            while (N < maxN) {
+                ++N; 
+
+                linalg::Vec<d64> x = proposal.sample(gen);
+                d64 logWeight = target.logDensity(x) - proposal.logDensity(x);
+
+                acc.update(logWeight, f(x));
+
+                if (N < 2) {
+                    continue; // need 2 weighted samples for variance estimate
+                }
+
+                d64 err = std::sqrt(acc.varianceEstimate());
+                if (err < stopCondition) {
+                    converged = true;
+                    break;
+                }
+            }
+
+            ImportanceSampleResult res;
+            res.converged = converged;
+            res.finalError = std::sqrt(acc.varianceEstimate());
+            res.value = acc.mean();
+            res.numIter = N;
+            res.effectiveSampleSize = acc.effectiveSampleSize();
+
+            return res;
+        }
+
+    } // namespace sample
     
 } // namespace calculus
