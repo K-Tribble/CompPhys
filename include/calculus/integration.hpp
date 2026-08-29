@@ -210,7 +210,7 @@ namespace integrate {
     // function-local static RNG inside a template is actually instantiated
     // once *per distinct lambda type F*, not shared globally.
     template <typename F, std::uniform_random_bit_generator Generator>
-    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, Generator& gen, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, Generator& gen, d64 stopCondition = kMonteCarloStopCondition, u32 maxN = 1000) {
         const u32 n = leftBoundaries.size();
         if (rightBoundaries.size() != n) {
             throw std::invalid_argument("Boundary arrays must be same size");
@@ -270,7 +270,7 @@ namespace integrate {
     // Convenience overload: owns its own engine, seeded from random_device,
     // when reproducibility isn't needed.
     template <typename F>
-    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+    inline IntegralResult mc(F&& func, std::span<const d64> leftBoundaries, std::span<const d64> rightBoundaries, d64 stopCondition = kMonteCarloStopCondition, u32 maxN = 1000) {
         thread_local std::mt19937 gen(std::random_device{}());
         return mc(std::forward<F>(func), leftBoundaries, rightBoundaries, gen, stopCondition, maxN);
     }
@@ -290,7 +290,7 @@ namespace sample {
     // using samples drawn from posposal g. 
     template <typename F>
     inline ImportanceSampleResult importanceSample(const TargetDistribution& target, const Proposal& proposal, F&& f,
-        std::mt19937& gen, d64 stopCondition = kIterStopCondition, u32 maxN = 1000) {
+        std::mt19937& gen, d64 stopCondition = kMonteCarloStopCondition, u32 maxN = 1000) {
             ImportanceAccumulator acc;
             bool converged = false;
 

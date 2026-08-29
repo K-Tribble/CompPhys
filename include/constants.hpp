@@ -5,3 +5,4 @@
 constexpr d64 kDefaultAbsTol = 1e-10;
 constexpr d64 kDefaultRelTol = 1e-10;
 constexpr d64 kIterStopCondition = 1e-14;
+constexpr d64 kMonteCarloStopCondition = 1e-4;
