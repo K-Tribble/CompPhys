@@ -11,6 +11,7 @@
 #include "linalg/vec.hpp"
 #include "calculus/target_distributions/target_distribution.hpp"
 #include "calculus/proposal/proposal.hpp"
+#include "calculus/transition_proposal/transition_proposal.hpp"
 
 // Welford's online algorithm: updates a running mean and sum-of-squared-deviations
 // (M2) one sample at a time, in a single pass.
@@ -325,6 +326,86 @@ namespace sample {
             return res;
         }
 
+
+    // Convenience overload: owns its own engine, seeded from random_device,
+    // when reproducibility isn't needed.
+    template <typename F>
+    inline ImportanceSampleResult importanceSample(const TargetDistribution& target, const Proposal& proposal, F&& f,
+        d64 stopCondition = kMonteCarloStopCondition, u32 maxN = 1000) {
+            thread_local std::mt19937 gen(std::random_device{}());
+            return importanceSample(target, proposal, std::forward<F>(f), gen, stopCondition, maxN);
+        }
+
+    struct MetropolisResult {
+        bool converged;
+        d64 finalError;
+        d64 value;
+        u32 numIter;
+        d64 acceptanceRate;
+        d64 effectiveSampleSize
+    }; 
+
+    inline MetropolisResult metropolis(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
+        const linalg::Vec<d64>& initial, std::mt19937& gen, d64 stopCondition = kMonteCarloStopCondition,
+        u32 maxN = 1000, u32 minIter = 100) {
+ 
+            WelfordAccumulator acc;
+            bool converged = false;
+            u32 accepted = 0;
+            u32 N = 0;
+            linalg::Vec<d64> currentSample = initial;
+            d64 logDensityCurrent = target.logDensity(currentSample);
+ 
+            while (N < maxN) {
+                ++N;
+ 
+                linalg::Vec<d64> proposedSample = proposal.sample(currentSample, gen);
+                d64 logDensityProposed = target.logDensity(proposedSample);
+ 
+                d64 logAcceptanceRatio = logDensityProposed - logDensityCurrent
+                    + proposal.logDensity(proposedSample, currentSample)   
+                    - proposal.logDensity(currentSample, proposedSample);  
+ 
+                bool accept = (logAcceptanceRatio >= 0.0) ||
+                    (std::uniform_real_distribution<d64>(0.0, 1.0)(gen) < std::exp(logAcceptanceRatio));
+ 
+                if (accept) {
+                    currentSample = proposedSample;
+                    logDensityCurrent = logDensityProposed;
+                    ++accepted;
+                }
+
+                acc.update(f(currentSample));
+ 
+                if (N < std::max(static_cast<u32>(2), minIter)) {
+                    // Consecutive rejections leave the chain stuck at the same
+                    // point, which drives the naive (autocorrelation-blind)
+                    // variance estimate straight to zero. This makes it look
+                    // "converged" after just a couple of samples despite the
+                    // chain never having moved. Waiting for minIter samples
+                    // before ever trusting the stop condition doesn't fix the
+                    // underlying autocorrelation problem, but it rules out
+                    // this specific, likely, and misleading failure mode.
+                    continue;
+                }
+ 
+                d64 err = std::sqrt(acc.variance() / N);
+                if (err < stopCondition) {
+                    converged = true;
+                    break;
+                }
+            }
+ 
+            MetropolisResult res;
+            res.converged = converged;
+            res.acceptanceRate = static_cast<d64>(accepted) / N;
+            res.value = acc.mean;
+            res.finalError = std::sqrt(acc.variance() / N);
+            res.effectiveSampleSize = 0.0; // placeholder for now until integrated-autocorrelation-time estimate is made
+            res.numIter = N;
+ 
+            return res;
+    }
     } // namespace sample
     
 } // namespace calculus
