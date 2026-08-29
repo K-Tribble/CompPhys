@@ -336,4 +336,22 @@ int main() {
     std::cout << D;
 
     std::cout << testEig.trace() << "\n" << sumEig << std::endl;
+
+
+    Matrix<c64> complexTest{
+        {{2, 0}, {1, -1}},
+        {{1, 1}, {3, 0}}
+    };
+
+    std::cout << complexTest;
+    std::cout << complexTest.isHermitian() << std::endl;
+
+    EigenResult<c64> complexERes = complexTest.hermitianEigenQR();
+    d64 csumEig = 0.0;
+    for (auto& v : complexERes.eigenvalues) csumEig += v;
+    Matrix<d64> complexDiag = Matrix<d64>::diagonal(complexERes.eigenvalues);
+    std::cout << complexDiag;
+    std::cout << "Trace: " << complexTest.trace() << "\nSum of eigenvals: " << csumEig << std::endl;
+
+    std::cout << "Eigenvectors: \n" << complexERes.eigenvectors;
 }
