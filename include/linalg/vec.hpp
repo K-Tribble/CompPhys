@@ -64,6 +64,27 @@ public:
             return Vec(data);
         }
     }
+
+    // overload that also templates the random bit generator used to sample random numbers
+    // for reproducibility.
+    template <typename Distribution, std::uniform_random_bit_generator Generator>
+    static Vec<T> random(u32 n, Distribution dist, Generator& gen){
+        if constexpr(is_complex_v<T>) {
+            std::vector<T> data(n);
+            for (T& z : data) {
+                T val{dist(gen), dist(gen)};
+                z = val;
+            }
+            return Vec(data);
+        } else {
+            std::vector<T> data(n);
+            for (T& x : data) {
+                x = dist(gen);
+            }
+            return Vec(data);
+        }
+    }
+    
     // default random method which uses a uniform real distribution from -1.0 to 1.0
     static Vec random(u32 n);
     T& operator()(u32 i) {return data_.at(i);}
