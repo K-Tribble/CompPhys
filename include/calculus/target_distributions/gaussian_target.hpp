@@ -1,6 +1,7 @@
 #pragma once
 
 #include "calculus/target_distributions/target_distribution.hpp"
+#include "calculus/target_distributions/differentiable_target.hpp"
 
 namespace calculus {
 
