@@ -1,7 +1,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "calculus/accumulators.hpp
+#include "calculus/accumulators.hpp"
 
 namespace calculus {
 
