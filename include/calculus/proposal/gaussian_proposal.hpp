@@ -33,10 +33,8 @@ namespace sample {
             linalg::Vec<d64> sample(std::mt19937& gen) const override {
                 std::normal_distribution<d64> dist(0.0, sigma_);
                 u32 n = mean_.size();
-                linalg::Vec<d64> x(n);
-                for (u32 i = 0; i < n; ++i) {
-                    x(i) = mean_(i) + dist(gen);
-                }
+                linalg::Vec<d64> x = linalg::Vec<d64>::random(n, dist, gen);
+                x += mean_; // shift by mean
                 return x;
             }
 
