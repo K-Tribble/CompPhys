@@ -12,98 +12,12 @@
 #include "calculus/target_distributions/target_distribution.hpp"
 #include "calculus/proposal/proposal.hpp"
 #include "calculus/transition_proposal/transition_proposal.hpp"
-
-// Welford's online algorithm: updates a running mean and sum-of-squared-deviations
-// (M2) one sample at a time, in a single pass.
-struct WelfordAccumulator {
-    u32 count = 0;
-    d64 mean = 0.0;
-    d64 M2 = 0.0;
-
-    inline void update(d64 x) {
-        ++count;
-        d64 delta = x - mean;
-        mean += delta / count;
-        d64 delta2 = x - mean;
-        M2 += delta * delta2;
-    }
-
-    // Sample variance (Bessel-corrected). Undefined for count < 2, so callers
-    // should guard on count before calling this.
-    inline d64 variance() const {
-        return M2 / (count - 1);
-    }
- };
-
-// Accumulator for self-normalized importance sampleing:
-// mu_hat = sum(w_i * f_i) / sum(w_i),   w_i = P(x_i) / q(x_i)
-struct ImportanceAccumulator {
-    u32 count = 0;
-    d64 maxLogWeight = -std::numeric_limits<d64>::infinity();
-    d64 sumW = 0.0;
-    d64 sumWF = 0.0;
-    d64 sumW2 = 0.0;
-    d64 sumW2F = 0.0;
-    d64 sumW2F2 = 0.0;
-
-    inline void update(d64 logWeight, d64 f) {
-        ++count;
-
-        if (logWeight > maxLogWeight) {
-            if (sumW > 0.0) {
-                d64 rescale1 = std::exp(maxLogWeight - logWeight);
-                d64 rescale2 = rescale1 * rescale1;
-
-                sumW *= rescale1;
-                sumWF *= rescale1;
-                sumW2 *= rescale2;
-                sumW2F *= rescale2;
-                sumW2F2 *= rescale2;
-            }
-            maxLogWeight = logWeight;
-        }
-
-        d64 w = std::exp(logWeight - maxLogWeight);
-        d64 w2 = w * w;
-
-        sumW += w;
-        sumWF += w * f;
-        sumW2 += w2;
-        sumW2F += w2 * f;
-        sumW2F2 += w2 * f * f;
-    }
-
-    inline d64 mean() const {
-        return sumWF / sumW;
-    }
-
-    // Delta-method variance estimate of mean() itself:
-    //   Var(mu_hat) ~= sum(w_i^2 (f_i - mu_hat)^2) / (sum w_i)^2
-    inline d64 varianceEstimate() const {
-        d64 mu = mean();
-        d64 num = sumW2F2 - 2.0 * mu * sumW2F + mu * mu * sumW2;
-        return num / (sumW * sumW);
-    }
-
-    // How many equally-weighted samples this weighted sample is
-    // "worth". ESS << count signals weight degeneracy — a handful of
-    // samples dominating the estimate, usually because g is a poor
-    // match to P.
-    inline d64 effectiveSampleSize() const {
-        return (sumW * sumW) / sumW2;
-    }
-};
+#include "calculus/integral_results.hpp"
+#include "calculus/accumulators.hpp"
 
 namespace calculus {
 
 namespace integrate {
-
-    struct IntegralResult {
-        bool converged;
-        d64 finalError;
-        d64 value;
-        u32 numIter;
-    };
 
     template <typename F>
     inline IntegralResult trapezoidal(F&& func, const d64 a, const d64 b, d64 stopCondition = kIterStopCondition, u32 maxIter = 1000) {
@@ -278,15 +192,6 @@ namespace integrate {
 } // namespace integrate
 
 namespace sample {
-
-    struct ImportanceSampleResult {
-        bool converged;
-        d64 finalError;
-        d64 value;                // self-normalized estimate of E_P[f]
-        u32 numIter;
-        d64 effectiveSampleSize;  // diagnostic to compare against numIter
-    };
-        
     // Self-normalized important sampling estimate of E_P[f(X)], X ~ P,
     // using samples drawn from posposal g. 
     template <typename F>
@@ -336,20 +241,13 @@ namespace sample {
             return importanceSample(target, proposal, std::forward<F>(f), gen, stopCondition, maxN);
         }
 
-    struct MetropolisResult {
-        bool converged;
-        d64 finalError;
-        d64 value;
-        u32 numIter;
-        d64 acceptanceRate;
-        d64 effectiveSampleSize
-    }; 
-
-    inline MetropolisResult metropolis(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
+    // Integrates a function with metropolis MCMC, requiers a symmetric transition proposal
+    template <typename F>
+    inline MCMCResult metropolis(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
         const linalg::Vec<d64>& initial, std::mt19937& gen, d64 stopCondition = kMonteCarloStopCondition,
-        u32 maxN = 1000, u32 minIter = 100) {
+        u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
  
-            WelfordAccumulator acc;
+            MCMCAccumulator acc;
             bool converged = false;
             u32 accepted = 0;
             u32 N = 0;
@@ -376,32 +274,18 @@ namespace sample {
                 }
 
                 acc.update(f(currentSample));
- 
-                if (N < std::max(static_cast<u32>(2), minIter)) {
-                    // Consecutive rejections leave the chain stuck at the same
-                    // point, which drives the naive (autocorrelation-blind)
-                    // variance estimate straight to zero. This makes it look
-                    // "converged" after just a couple of samples despite the
-                    // chain never having moved. Waiting for minIter samples
-                    // before ever trusting the stop condition doesn't fix the
-                    // underlying autocorrelation problem, but it rules out
-                    // this specific, likely, and misleading failure mode.
-                    continue;
-                }
- 
-                d64 err = std::sqrt(acc.variance() / N);
-                if (err < stopCondition) {
-                    converged = true;
-                    break;
-                }
             }
+
+            acc.finalize(maxLag); // compute autocorrelation and effective sample size
+            d64 ess = acc.effectiveSampleSize(essMethod, C);
  
-            MetropolisResult res;
+            MCMCResult res;
             res.converged = converged;
             res.acceptanceRate = static_cast<d64>(accepted) / N;
             res.value = acc.mean;
-            res.finalError = std::sqrt(acc.variance() / N);
-            res.effectiveSampleSize = 0.0; // placeholder for now until integrated-autocorrelation-time estimate is made
+            res.effectiveSampleSize = ess; 
+            res.finalError = std::sqrt(acc.variance() / ess);
+            res.method = essMethod;
             res.numIter = N;
  
             return res;
