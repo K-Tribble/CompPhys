@@ -241,11 +241,11 @@ namespace sample {
             return importanceSample(target, proposal, std::forward<F>(f), gen, stopCondition, maxN);
         }
 
-    // Integrates a function with metropolis MCMC, requiers a symmetric transition proposal
+    // Integrates a function with metropolis MCMC, requires a symmetric transition proposal
     template <typename F>
     inline MCMCResult metropolis(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
-        const linalg::Vec<d64>& initial, std::mt19937& gen, d64 stopCondition = kMonteCarloStopCondition,
-        u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+        const linalg::Vec<d64>& initial, std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, 
+        ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
  
             MCMCAccumulator acc;
             bool converged = false;
@@ -284,7 +284,7 @@ namespace sample {
             res.acceptanceRate = static_cast<d64>(accepted) / N;
             res.value = acc.mean;
             res.effectiveSampleSize = ess; 
-            res.finalError = std::sqrt(acc.variance() / ess);
+            res.finalError = std::sqrt(acc.variance / ess);
             res.method = essMethod;
             res.numIter = N;
  
