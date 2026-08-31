@@ -376,19 +376,19 @@ namespace sample {
                 // current value of the hamiltonian
                 d64 currentHamiltonian = currentPotentialEnergy + currentKineticEnergy;
 
-                // rate of change of position
-                linalg::Vec<d64> dxdt = mInverse * currentMomentum;
-                // rate of change of momentum is negative gradient of potential energy, 
-                // which is the grad log density of target at the current position.
-                linalg::Vec<d64> dpdt = target.gradLogDensity(currentPos);
-
-                // Update momentum half step
-                linalg::Vec<d64> proposedMomentum = currentMomentum + dpdt * 0.5 * stepSize;
-                // Update position full step
-                linalg::Vec<d64> proposedPos = currentPos + dxdt * stepSize;
-                // Update momentum last half step
-                proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
-
+                // Define proposed position and momentum as equal to the initial position and momentum
+                // then use leapfrog integration to update the proposed position and momentum
+                linalg::Vec<d64> proposedPos = currentPos;
+                linalg::Vec<d64> proposedMomentum = currentMomentum;
+                for (u32 i = 0; i < numSteps; ++i) {
+                    // Update momentum half step
+                    proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
+                    // Update position full step
+                    proposedPos += mInverse * proposedMomentum * stepSize;
+                    // Update momentum last half step
+                    proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
+                }
+                
                 // Calculate proposed potential energy
                 d64 proposedPotentialEnergy = -target.logDensity(proposedPos);
                 // Calculate proposed kinetic energy
