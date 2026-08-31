@@ -336,12 +336,12 @@ namespace sample {
 
     // Integrates a function using Hamiltonian Monte Carlo
     // The mass matrix must be symmetric positive definite, but this is not enforced in code.
-    // The mass matrix is usually chosen to be the covariance of the target distribution, but this is not required.
+    // The mass matrix is usually chosen to be approximately the covariance of the target distribution, but this is not required.
     // The step size and number of steps must be chosen to balance exploration and acceptance rate.
     // The step size should be small enough to ensure that the acceptance rate is high, but not so small that the number of steps is 
     // too large and the exploration is too slow. 
     template <typename F>
-    inline MCMCResult hmc(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, const linalg::Matrix<d64> massMatrix, 
+    inline MCMCResult hmc(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, const linalg::Matrix<d64>& massMatrix, 
         d64 stepSize, u32 numSteps, std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             u32 n = initial.size();
 
@@ -351,6 +351,14 @@ namespace sample {
 
             if (target.dim() != n) {
                 throw std::invalid_argument("Target distribution dimension must match the dimension of the initial position");
+            }
+
+            if (numSteps == 0) {
+                throw std::invalid_argument("Number of leapfrog steps must be greater than zero");
+            }
+
+            if (stepSize <= 0.0) {
+                throw std::invalid_argument("Step size must be positive");
             }
 
             MCMCAccumulator acc;
