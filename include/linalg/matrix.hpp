@@ -115,6 +115,7 @@ public:
     Matrix<T> getUpper() const;
 
     Matrix<T> inverse() const;
+    Matrix<T> inverseHPD() const; // Finds the inverse of a hermitian positive definite matrix using cholesky decomposition
     Matrix<T> cofactorInversion() const;
 
     // The following methdo only find the largest modulus real eigenvalue and its associated real eigenvector

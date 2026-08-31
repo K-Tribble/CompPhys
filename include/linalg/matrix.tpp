@@ -797,6 +797,44 @@ Matrix<T> Matrix<T>::inverse() const {
 }
 
 template <Scalar T>
+Matrix<T> Matrix<T>::inverseHPD() const {
+    if (rows_ != cols_) {
+        throw std::invalid_argument("Cannot invert rectangular matrix");
+    }
+
+    const u32 n = rows_;
+
+    Matrix<T> L = cholesky();
+    Matrix<T> X = identity(n);
+
+    for (u32 j = 0; j < n; ++j) {
+        for (u32 i = j; i < n; ++i) {
+            T sum = X(i, j);
+
+            for (u32 k = 0; k < j; ++k) {
+                sum -= L(i, k) * X(k, j);
+            }
+
+            X(i, j) = sum / L(i, i);
+        }
+    }
+
+    for (i32 j = n - 1; j >= 0; --j) {
+        for (i32 i = 0; i <= j; ++i) {
+            T sum = X(i, j);
+
+            for (u32 k = j + 1; k < n; ++k) {
+                sum -= conjugate(L(k, j)) * X(k, j);
+            }
+
+            X(i, j) = sum / conjugate(L(j, j));
+        }
+    }
+
+    return X;
+}
+
+template <Scalar T>
 Matrix<T> Matrix<T>::operator+(const Matrix<T>& other) const {
     if (rows_ != other.rows_ || cols_ != other.cols_) {
         throw std::invalid_argument("Shape mismatch");
