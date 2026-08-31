@@ -354,4 +354,14 @@ int main() {
     std::cout << "Trace: " << complexTest.trace() << "\nSum of eigenvals: " << csumEig << std::endl;
 
     std::cout << "Eigenvectors: \n" << complexERes.eigenvectors;
+
+    Matrix<d64> spdTest{
+        {4.0, 1.0, 1.0},
+        {1.0, 3.0, 0.5},
+        {1.0, 0.5, 2.0}
+    };
+
+    Matrix<d64> spdTestInv = spdTest.inverseHPD();
+
+    std::cout << spdTest * spdTestInv;
 }
