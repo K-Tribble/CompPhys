@@ -9,6 +9,9 @@
 #include "types.hpp"
 #include "constants.hpp"
 #include "linalg/vec.hpp"
+#include "linalg/matrix.hpp"
+#include "linalg/linalg_solve.hpp"
+#include "linalg/linalg_interop.hpp"
 #include "calculus/target_distributions/target_distribution.hpp"
 #include "calculus/proposal/proposal.hpp"
 #include "calculus/transition_proposal/transition_proposal.hpp"
@@ -249,6 +252,10 @@ namespace sample {
     inline MCMCResult metropolisHastings(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
         const linalg::Vec<d64>& initial, std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, 
         ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+
+            if (target.dim() != initial.size()) {
+                throw std::invalid_argument("Initial sample dimension does not match target distribution dimension");
+            }
  
             MCMCAccumulator acc;
             bool converged = false;
@@ -298,10 +305,10 @@ namespace sample {
     // when reproducibility isn't needed.
     template <typename F>
     inline MCMCResult metropolisHastings(const TargetDistribution& target, const Proposal& proposal, F&& f,
-        const linalg::Vec<d64>& intitial, u32 maxN = 10000, u32 maxLag = 0,
+        const linalg::Vec<d64>& initial, u32 maxN = 10000, u32 maxLag = 0,
         ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             thread_local std::mt19937 gen(std::random_device{}());
-            return metropolisHastings(target, proposal, std::forward<F>(f), intitial, gen, maxN, maxLag, essMethod, C);
+            return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
     }
 
     // Convenience function for metropolisHastings for when the proposal is an isotropic gaussian
@@ -328,6 +335,96 @@ namespace sample {
             thread_local std::mt19937 gen(std::random_device{}());
             return mala(target, std::forward<F>(f), initial, h, gen, maxN, maxLag, essMethod, C);
     }
+
+    // Integrates a function using Hamiltonian Monte Carlo
+    // The mass matrix must be symmetric positive definite, but this is not enforced in code.
+    // The mass matrix is usually chosen to be the covariance of the target distribution, but this is not required.
+    // The step size and number of steps must be chosen to balance exploration and acceptance rate.
+    // The step size should be small enough to ensure that the acceptance rate is high, but not so small that the number of steps is 
+    // too large and the exploration is too slow. 
+    template <typename F>
+    inline MCMCResult hmc(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, const linalg::Matrix<d64> massMatrix, 
+        d64 stepSize, u32 numSteps, std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+            u32 n = initial.size();
+
+            if (massMatrix.rows() != n || massMatrix.cols() != n) {
+                throw std::invalid_argument("Mass matrix must be square and match the dimension of the initial position");
+            }
+
+            if (target.dim() != n) {
+                throw std::invalid_argument("Target distribution dimension must match the dimension of the initial position");
+            }
+
+            MCMCAccumulator acc;
+            bool converged = false;
+            u32 accepted = 0;
+            u32 N = 0;
+            linalg::Vec<d64> currentPos = initial;
+
+            linalg::Matrix<d64> mInverse = massMatrix.inverseHPD();
+
+            linalg::Matrix<d64> L = massMatrix.choleskyDecomp();
+            
+            while (N < maxN) {
+                ++N;
+
+                linalg::Vec<d64> currentMomentum = L * linalg::Vec<d64>::random(n, std::normal_distribution<d64>(0.0, 1.0), gen);
+
+                d64 currentKineticEnergy = 0.5 * (currentMomentum.dot(mInverse * currentMomentum));
+                d64 currentPotentialEnergy = -target.logDensity(currentPos);
+
+                // current value of the hamiltonian
+                d64 currentHamiltonian = currentPotentialEnergy + currentKineticEnergy;
+
+                // rate of change of position
+                linalg::Vec<d64> dxdt = mInverse * currentMomentum;
+                // rate of change of momentum is negative gradient of potential energy, 
+                // which is the grad log density of target at the current position.
+                linalg::Vec<d64> dpdt = target.gradLogDensity(currentPos);
+
+                // Update momentum half step
+                linalg::Vec<d64> proposedMomentum = currentMomentum + dpdt * 0.5 * stepSize;
+                // Update position full step
+                linalg::Vec<d64> proposedPos = currentPos + dxdt * stepSize;
+                // Update momentum last half step
+                proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
+
+                // Calculate proposed potential energy
+                d64 proposedPotentialEnergy = -target.logDensity(proposedPos);
+                // Calculate proposed kinetic energy
+                d64 proposedKineticEnergy = 0.5 * (proposedMomentum.dot(mInverse * proposedMomentum));
+
+                d64 proposedHamiltonian = proposedPotentialEnergy + proposedKineticEnergy;
+
+                d64 deltaH = proposedHamiltonian - currentHamiltonian;
+
+                d64 logAcceptanceProb = -deltaH;
+
+                bool accept = (logAcceptanceProb >= 0.0) ||
+                    (std::uniform_real_distribution<d64>(0.0, 1.0)(gen) < std::exp(logAcceptanceProb));
+
+                if (accept) {
+                    currentPos = proposedPos;
+                    ++accepted;
+                }
+
+                acc.update(f(currentPos));
+            }
+
+            acc.finalize(maxLag);
+            d64 ess = acc.effectiveSampleSize(essMethod, C);
+
+            MCMCResult res;
+            res.converged = converged;
+            res.acceptanceRate = static_cast<d64>(accepted) / N;
+            res.value = acc.mean;
+            res.effectiveSampleSize = ess;
+            res.finalError = std::sqrt(acc.variance / ess);
+            res.method = essMethod;
+            res.numIter = N;
+
+            return res;
+        }
 
 } // namespace sample
     
