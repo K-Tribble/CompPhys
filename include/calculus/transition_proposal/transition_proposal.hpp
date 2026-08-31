@@ -1,6 +1,7 @@
 #pragma once
 
-#include "calculus/target_distributions/target_distribution.hpp"
+#include "linalg/vec.hpp"
+#include "types.hpp"
 
 namespace calculus {
 
