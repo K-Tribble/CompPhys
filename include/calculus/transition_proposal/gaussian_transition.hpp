@@ -1,7 +1,8 @@
 #pragma once
 
-#include "calculus/transition_proposal/transition_proposal.hpp"
 #include <random>
+#include <cmath>
+#include "calculus/transition_proposal/transition_proposal.hpp"
 
 namespace calculus {
 
