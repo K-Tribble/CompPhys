@@ -292,7 +292,7 @@ namespace sample {
             return res;
     }
     
-    // Convenience overload for metropolisHastings: owns its own engine, seeded from random_device,
+    // Convenience overload for metropolisHastings: owns its own engine, seeded from random_device, 
     // when reproducibility isn't needed.
     template <typename F>
     inline MCMCResult metropolisHastings(const TargetDistribution& target, const Proposal& proposal, F&& f,
@@ -302,9 +302,17 @@ namespace sample {
             return metropolisHastings(target, proposal, std::forward<F>(f), intitial, gen, maxN, maxLag, essMethod, C);
     }
 
+    // Convenience function for metropolisHastings for when the proposal is an isotropic gaussian
+    template <typename F> 
+    inline MCMCResult gaussianMH(const TargetDistribution& target, F&& F, d64 stdev, const linalg::Vec<d64> initial,
+        std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+            IsotropicGaussianTransition proposal(stdev);
+            return metropolisHastings(target, proposal, std::forward<F>(F), initial, gen, maxN, maxLag, essMethod, C);
+    }
+
     // Integrates a function with MALA, using the metropolis-hastings function with a specific transition proposal
     template <typename F>
-    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64& initial, d64 h, std::mt19937 gen, 
+    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64& initial, d64 h, std::mt19937& gen, 
         u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             Malatransition proposal(h, target);
             return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
