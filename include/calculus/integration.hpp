@@ -14,7 +14,7 @@
 #include "calculus/transition_proposal/transition_proposal.hpp"
 #include "calculus/integral_results.hpp"
 #include "calculus/accumulators.hpp"
-#include "calculus/transition_proposal/mala_transition.hpp
+#include "calculus/transition_proposal/mala_transition.hpp"
 
 namespace calculus {
 
