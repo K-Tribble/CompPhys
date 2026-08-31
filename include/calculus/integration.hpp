@@ -258,7 +258,6 @@ namespace sample {
             }
  
             MCMCAccumulator acc;
-            bool converged = false;
             u32 accepted = 0;
             u32 N = 0;
             linalg::Vec<d64> currentSample = initial;
@@ -290,7 +289,6 @@ namespace sample {
             d64 ess = acc.effectiveSampleSize(essMethod, C);
  
             MCMCResult res;
-            res.converged = converged;
             res.acceptanceRate = static_cast<d64>(accepted) / N;
             res.value = acc.mean;
             res.effectiveSampleSize = ess; 
@@ -356,7 +354,6 @@ namespace sample {
             }
 
             MCMCAccumulator acc;
-            bool converged = false;
             u32 accepted = 0;
             u32 N = 0;
             linalg::Vec<d64> currentPos = initial;
@@ -380,14 +377,18 @@ namespace sample {
                 // then use leapfrog integration to update the proposed position and momentum
                 linalg::Vec<d64> proposedPos = currentPos;
                 linalg::Vec<d64> proposedMomentum = currentMomentum;
+                proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
+
                 for (u32 i = 0; i < numSteps; ++i) {
-                    // Update momentum half step
-                    proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
-                    // Update position full step
-                    proposedPos += mInverse * proposedMomentum * stepSize;
-                    // Update momentum last half step
-                    proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
+
+                    proposedPos += (mInverse * proposedMomentum) * stepSize;
+
+                    if (i != numSteps - 1) {
+                        proposedMomentum += target.gradLogDensity(proposedPos) * stepSize;
+                    }
                 }
+
+                proposedMomentum += target.gradLogDensity(proposedPos) * 0.5 * stepSize;
                 
                 // Calculate proposed potential energy
                 d64 proposedPotentialEnergy = -target.logDensity(proposedPos);
@@ -401,7 +402,7 @@ namespace sample {
                 d64 logAcceptanceProb = -deltaH;
 
                 bool accept = (logAcceptanceProb >= 0.0) ||
-                    (std::uniform_real_distribution<d64>(0.0, 1.0)(gen) < std::exp(logAcceptanceProb));
+                    std::log((std::uniform_real_distribution<d64>(0.0, 1.0)(gen)) < logAcceptanceProb);
 
                 if (accept) {
                     currentPos = proposedPos;
@@ -415,7 +416,6 @@ namespace sample {
             d64 ess = acc.effectiveSampleSize(essMethod, C);
 
             MCMCResult res;
-            res.converged = converged;
             res.acceptanceRate = static_cast<d64>(accepted) / N;
             res.value = acc.mean;
             res.effectiveSampleSize = ess;

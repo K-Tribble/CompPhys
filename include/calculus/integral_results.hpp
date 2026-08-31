@@ -27,7 +27,6 @@ namespace sample {
     };
 
     struct MCMCResult {
-        bool converged;
         d64 finalError;
         d64 value;
         u32 numIter;
