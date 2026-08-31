@@ -317,15 +317,62 @@ namespace sample {
             return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
     }
 
-    // Integrates a function with MALA, using the metropolis-hastings function with a specific transition proposal
+    // Integrates a function with the Metropolis-Adjusted Langevin Algortim (MALA)
     template <typename F>
     inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, d64 h, std::mt19937& gen, 
         u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             if (h <= 0) {
                 throw std::invalid_argument("h must be positive for MALA");
             }
+            if (target.dim() != initial.size()) {
+                throw std::invalid_argument("Initial sample dimension does not match target distribution dimension");
+            }
+
             MALATransition proposal(h, target);
-            return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
+
+            MCMCAccumulator acc;
+            u32 accepted = 0;
+            u32 N = 0;
+            linalg::Vec<d64> currentSample = initial;
+            d64 logCurrentDensity = target.logDensity(currentSample);
+            linalg::Vec<d64> gradCurrent = target.gradLogDensity(currentSample);
+
+            while (N < maxN) {
+                ++N;
+
+                linalg::Vec<d64> proposedSample = proposal.sampleFromgrad(currentSample, gradCurrent, gen);
+                d64 logDensityProposed = target.logDensity(proposedSample);
+                linalg::Vec<d64> gradProposed = target.gradLogDensity(proposedSample);
+
+                d64 logAcceptanceRatio = logDensityProposed - logDensityCurrent 
+                    + proposal.logDensityFromGrad(proposedSample, gradProposed, currentSample)
+                    - proposal.logDensityFromGrad(currentSample, gradCurrent, proposedSample);
+
+                bool accept = (logAcceptanceRatio >= 0.0) ||
+                    (std::uniform_real_distribution<d64>(0.0, 1.0)(gen) < std::exp(logAcceptanceRatio));
+
+                if (accept) {
+                    currentSample = std::move(proposedSample);
+                    logDensityCurrent = logDensityProposed;
+                    gradCurrent = std::move(gradProposed);
+                    ++accepted;
+                }
+
+                acc.update(f(currentSample));
+            }
+
+            acc.finalize(maxLag);
+            d64 ess = acc.effectiveSampleSize(essMethod, C);
+
+            MCMCResult res;
+            res.acceptanceRate = static_cast<d64>(accepted) / N;
+            res.value = acc.mean;
+            res.effectiveSampleSize = ess;
+            res.finalError = std::sqrt(acc.variance / ess);
+            res.method = essMethod;
+            res.numIter = N;
+
+            return res;
     }
 
     // Convenience overload for mala: owns its own engine, seeded from random_device,
@@ -416,7 +463,7 @@ namespace sample {
                     (std::log(std::uniform_real_distribution<d64>(0.0, 1.0)(gen)) < logAcceptanceProb);
 
                 if (accept) {
-                    currentPos = proposedPos;
+                    currentPos = std::move(proposedPos);
                     ++accepted;
                     currentPotentialEnergy = proposedPotentialEnergy;
                 }
