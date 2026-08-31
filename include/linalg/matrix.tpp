@@ -436,6 +436,51 @@ Matrix<T> Matrix<T>::getCofactorMatrix() const {
 }
 
 template <Scalar T>
+Matrix<T> Matrix<T>::CholeskyDecomp() const {
+
+    if (rows_ != cols_) {
+        throw std::invalid_argument(
+            "matrix must be square for Cholesky decomposition"
+        );
+    }
+
+    const u32 n = rows_;
+
+    Matrix<T> L(n, n, T{0});
+
+    for (u32 i = 0; i < n; ++i) {
+        for (u32 j = 0; j <= i; ++j) {
+
+            T sum = (*this)(i, j);
+
+            for (u32 k = 0; k < j; ++k) {
+                sum -= L(i, k) * conjugate(L(j, k));
+            }
+
+            if (i == j) {
+
+                RealType<T> diag = std::real(sum);
+
+                if (diag <= kDefaultAbsTol) {
+                    throw std::runtime_error(
+                        "matrix is not positive definite"
+                    );
+                }
+
+                L(i, i) = std::sqrt(diag);
+
+            } else {
+
+                L(i, j) = sum / L(j, j);
+            }
+        }
+    }
+
+    return L;
+}
+
+
+template <Scalar T>
 LUResult<T> Matrix<T>::LUDecomp() const {
     if (rows_ != cols_) {
         throw std::invalid_argument("matrix must be square to LU decompose");

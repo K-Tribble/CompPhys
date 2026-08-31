@@ -94,6 +94,9 @@ public:
 
     Matrix<T> getCofactorMatrix() const;
 
+    // perform cholesky decomposition of a hermitian positive definite matrix
+    // symmetric positive definiteness is not enforced but results can't be trusted if it doesn't hold
+    Matrix<T> CholeskyDecomp() const;
     // perform LU decomposition of the matrix with doolittle choice 
     LUResult<T> LUDecomp() const;
     // perform QR decomposition of the matrix with hosueholder reflections
