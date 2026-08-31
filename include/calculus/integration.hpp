@@ -321,6 +321,9 @@ namespace sample {
     template <typename F>
     inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, d64 h, std::mt19937& gen, 
         u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+            if (h <= 0) {
+                throw std::invalid_argument("h must be positive for MALA");
+            }
             MALATransition proposal(h, target);
             return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
     }
@@ -365,6 +368,7 @@ namespace sample {
             u32 accepted = 0;
             u32 N = 0;
             linalg::Vec<d64> currentPos = initial;
+            d64 currentPotentialEnergy = -target.logDensity(currentPos);
 
             linalg::Matrix<d64> mInverse = massMatrix.inverseHPD();
 
@@ -376,7 +380,6 @@ namespace sample {
                 linalg::Vec<d64> currentMomentum = L * linalg::Vec<d64>::random(n, std::normal_distribution<d64>(0.0, 1.0), gen);
 
                 d64 currentKineticEnergy = 0.5 * (currentMomentum.dot(mInverse * currentMomentum));
-                d64 currentPotentialEnergy = -target.logDensity(currentPos);
 
                 // current value of the hamiltonian
                 d64 currentHamiltonian = currentPotentialEnergy + currentKineticEnergy;
@@ -410,11 +413,12 @@ namespace sample {
                 d64 logAcceptanceProb = -deltaH;
 
                 bool accept = (logAcceptanceProb >= 0.0) ||
-                    std::log((std::uniform_real_distribution<d64>(0.0, 1.0)(gen)) < logAcceptanceProb);
+                    (std::log(std::uniform_real_distribution<d64>(0.0, 1.0)(gen)) < logAcceptanceProb);
 
                 if (accept) {
                     currentPos = proposedPos;
                     ++accepted;
+                    currentPotentialEnergy = proposedPotentialEnergy;
                 }
 
                 acc.update(f(currentPos));
@@ -434,7 +438,7 @@ namespace sample {
             return res;
         }
 
-        // convenience overload for hm: owns its own engine, seeded from random_device, 
+        // convenience overload for hmc: owns its own engine, seeded from random_device, 
         // when reproducibility isn't needed.
         template <typename F>
         inline MCMCResult hmc(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, const linalg::Matrix<d64>& massMatrix, 
