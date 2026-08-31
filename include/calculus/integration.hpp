@@ -14,6 +14,7 @@
 #include "calculus/transition_proposal/transition_proposal.hpp"
 #include "calculus/integral_results.hpp"
 #include "calculus/accumulators.hpp"
+#include "calculus/transition_proposal/mala_transition.hpp
 
 namespace calculus {
 
@@ -300,6 +301,24 @@ namespace sample {
             thread_local std::mt19937 gen(std::random_device{}());
             return metropolisHastings(target, proposal, std::forward<F>(f), intitial, gen, maxN, maxLag, essMethod, C);
     }
+
+    // Integrates a function with MALA, using the metropolis-hastings function with a specific transition proposal
+    template <typename F>
+    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64& initial, d64 h, std::mt19937 gen, 
+        u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+            Malatransition proposal(h, target);
+            return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
+    }
+
+    // Convenience overload for mala: owns its own engine, seeded from random_device,
+    // when reproducibility isn't needed.
+    template <typename F>
+    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64& initial, d64 h, 
+        u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+            thread_local std::mt19937 gen(std::random_device{}());
+            return mala(target, std::forward<F>(f), initial, h, gen, maxN, maxLag, essMethod, C);
+    }
+
 } // namespace sample
     
 } // namespace calculus
