@@ -15,6 +15,9 @@
 #include "calculus/integral_results.hpp"
 #include "calculus/accumulators.hpp"
 #include "calculus/transition_proposal/mala_transition.hpp"
+#include "calculus/target_distributions/differentiable_target.hpp"
+#include "calculus/target_distributions/gaussian_target.hpp"
+#include "calculus/transition_proposal/gaussian_transition.hpp"
 
 namespace calculus {
 
@@ -303,17 +306,17 @@ namespace sample {
 
     // Convenience function for metropolisHastings for when the proposal is an isotropic gaussian
     template <typename F> 
-    inline MCMCResult gaussianMH(const TargetDistribution& target, F&& F, d64 stdev, const linalg::Vec<d64> initial,
+    inline MCMCResult gaussianMH(const TargetDistribution& target, F&& f, d64 stdev, const linalg::Vec<d64>& initial,
         std::mt19937& gen, u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             IsotropicGaussianTransition proposal(stdev);
-            return metropolisHastings(target, proposal, std::forward<F>(F), initial, gen, maxN, maxLag, essMethod, C);
+            return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
     }
 
     // Integrates a function with MALA, using the metropolis-hastings function with a specific transition proposal
     template <typename F>
-    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64& initial, d64 h, std::mt19937& gen, 
+    inline MCMCResult mala(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, d64 h, std::mt19937& gen, 
         u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
-            MalaTransition proposal(h, target);
+            MALATransition proposal(h, target);
             return metropolisHastings(target, proposal, std::forward<F>(f), initial, gen, maxN, maxLag, essMethod, C);
     }
 
