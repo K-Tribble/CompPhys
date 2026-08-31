@@ -795,11 +795,10 @@ Matrix<T> Matrix<T>::inverse() const {
 
     return I;
 }
-
 template <Scalar T>
 Matrix<T> Matrix<T>::inverseHPD() const {
     if (rows_ != cols_) {
-        throw std::invalid_argument("Cannot invert rectangular matrix");
+        throw std::invalid_argument("Matrix must be square for Cholesky decomposition");
     }
 
     const u32 n = rows_;
@@ -808,10 +807,10 @@ Matrix<T> Matrix<T>::inverseHPD() const {
     Matrix<T> X = identity(n);
 
     for (u32 j = 0; j < n; ++j) {
-        for (u32 i = j; i < n; ++i) {
+        for (u32 i = 0; i < n; ++i) {
             T sum = X(i, j);
 
-            for (u32 k = 0; k < j; ++k) {
+            for (u32 k = 0; k < i; ++k) {
                 sum -= L(i, k) * X(k, j);
             }
 
@@ -819,15 +818,15 @@ Matrix<T> Matrix<T>::inverseHPD() const {
         }
     }
 
-    for (int j = n - 1; j >= 0; --j) {
-        for (int i = 0; i <= j; ++i) {
+    for (u32 j = 0; j < n; ++j) {
+        for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
             T sum = X(i, j);
 
-            for (u32 k = j + 1; k < n; ++k) {
-                sum -= conjugate(L(k, j)) * X(k, j);
+            for (u32 k = static_cast<u32>(i + 1); k < n; ++k) {
+                sum -= conjugate(L(k, i)) * X(k, j);
             }
 
-            X(i, j) = sum / conjugate(L(j, j));
+            X(i, j) = sum / conjugate(L(i, i));
         }
     }
 
