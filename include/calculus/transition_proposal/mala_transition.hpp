@@ -13,20 +13,27 @@ namespace sample {
             MALATransition(d64 h, const DifferentiableTarget& target) : h_(h), target_(target) {}
 
             linalg::Vec<d64> sample(const linalg::Vec<d64>& current, std::mt19937& gen) const override {
-                std::normal_distribution<d64> dist(0.0, 1.0);
-
-                linalg::Vec<d64> noise = target_.gradLogDensity(current) *  (h_ / 2.0) + 
-                    linalg::Vec<d64>::random(current.size(), dist, gen) * std::sqrt(h_);
-                
-                return current + noise;
+                return sampleFromGrad(current, target_.gradLogDensity(current), gen);
             }
 
-            // Normalization isnt strictly needed but is very easy and cheap to include here
             d64 logDensity(const linalg::Vec<d64>& from, const linalg::Vec<d64>& to) const override {
-                linalg::Vec<d64> diff = to - from - target_.gradLogDensity(from) * (h_ / 2.0);
+                return logDensityFromGrad(from, target_.gradLogDensity(from), to);
+            }
+
+            linalg::Vec<d64> sampleFromgrad(const linalg::Vec<d64>& current, const linalg::Vec<d64>& gradCurrent, 
+                std::mt19937& gen) const {
+                std::normal_distribution<d64> dist(0.0, 1.0);
+                linalg::Vec<d64> noise = gradCurrent * (h_ / 2.0) + 
+                    linalg::Vec<d64>::random(current.size(), dist, gen);
+                return current + noise;
+            }
+            // Normalization isnt strictly needed but is very easy and cheap to include here
+            d64 logDensityFromGrad(const linalg::Vec<d64>& from, const linalg::Vec<d64>& gradFrom, 
+                const linalg::Vec<d64>& to) const {
+                linalg::Vec<d64> diff = to - from - gradFrom * (h_ / 2.0);
                 d64 exponent = -0.5 * diff.normSquared() / h_;
-                d64 normalizaton = -0.5 * from.size() * std::log(2.0 * M_PI * h_);
-                return exponent + normalizaton;
+                d64 normalization = -0.5 * from.size() * std::log(2.0 * M_PI * h_);
+                return exponent + normalization;
             }
         
         private:
