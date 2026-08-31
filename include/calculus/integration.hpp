@@ -434,6 +434,15 @@ namespace sample {
             return res;
         }
 
+        // convenience overload for hm: owns its own engine, seeded from random_device, 
+        // when reproducibility isn't needed.
+        template <typename F>
+        inline MCMCResult hmc(const DifferentiableTarget& target, F&& f, const linalg::Vec<d64>& initial, const linalg::Matrix<d64>& massMatrix, 
+            d64 stepSize, u32 numSteps, u32 maxN = 10000, u32 maxLag = 0, ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
+                thread_local std::mt19937 gen(std::random_device{}());
+                return hmc(target, f, initial, massMatrix, stepSize, numSteps, gen, maxN, maxLag, essMethod, C);
+            }
+
 } // namespace sample
     
 } // namespace calculus
