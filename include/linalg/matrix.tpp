@@ -436,7 +436,7 @@ Matrix<T> Matrix<T>::getCofactorMatrix() const {
 }
 
 template <Scalar T>
-Matrix<T> Matrix<T>::CholeskyDecomp() const {
+Matrix<T> Matrix<T>::choleskyDecomp() const {
 
     if (rows_ != cols_) {
         throw std::invalid_argument(
@@ -804,7 +804,7 @@ Matrix<T> Matrix<T>::inverseHPD() const {
 
     const u32 n = rows_;
 
-    Matrix<T> L = cholesky();
+    Matrix<T> L = choleskyDecomp();
     Matrix<T> X = identity(n);
 
     for (u32 j = 0; j < n; ++j) {
@@ -819,8 +819,8 @@ Matrix<T> Matrix<T>::inverseHPD() const {
         }
     }
 
-    for (i32 j = n - 1; j >= 0; --j) {
-        for (i32 i = 0; i <= j; ++i) {
+    for (int j = n - 1; j >= 0; --j) {
+        for (int i = 0; i <= j; ++i) {
             T sum = X(i, j);
 
             for (u32 k = j + 1; k < n; ++k) {
