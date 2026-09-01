@@ -63,6 +63,14 @@ build/%.o: src/%.cpp
 run: $(TARGET)
 	./$(TARGET)
 
+ANHARMONIC_SRC = src/anharmonic_oscillator.cpp
+ANHARMONIC_TARGET = build/anharmonic
+
+anharmonic: $(ANHARMONIC_TARGET)
+
+$(ANHARMONIC_TARGET): $(ANHARMONIC_SRC)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< $(LDFLAGS) -o $@
 
 
 TEST_SRC = tests/test_vec.cpp \
@@ -105,4 +113,4 @@ count:
 		xargs -0 wc -l
 
 
-.PHONY: all run test clean rebuild count
+.PHONY: all run anharmonic test clean rebuild count
