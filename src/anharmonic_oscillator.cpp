@@ -16,7 +16,6 @@ public:
     }
 
     // Returns the negative Euclidean action (equivalent to log unnormalized density)
-    // Must not mutate shared/global state due to potential OpenMP parallelization
     d64 logDensity(const linalg::Vec<d64>& x) const override {
         d64 action = 0.0;
         for (u32 i = 0; i < N_; ++i) {
@@ -135,11 +134,41 @@ void run_pimc_simulation_hmc() {
 
     // 4. Construct the Mass Matrix
     // The mass matrix must be square and match the dimension of the initial position.
-    linalg::Matrix<d64> mass_matrix = linalg::Matrix<d64>::identity(N); 
+    // linalg::Matrix<d64> mass_matrix = linalg::Matrix<d64>::identity(N); 
+
+    // Use analytic precomputed mass matrix. The correlation between beads is almost entirely goverend by
+    // the stiff harmonic springs (the kinetic energy term) and the base harmonic potential.
+    // The optimal mass matrix approximates the hessian matrix, which is the inverse covariance matrix.
+    linalg::Matrix<d64> mass_matrix(N, N);
+
+    // Precompute matrix components
+    d64 dtau = beta / N;
+    d64 diag_spring = 2.0 * m / dtau;
+    d64 off_diag_spring = -m / dtau;
+    d64 diag_potential = dtau * m * omega * omega;
+    
+    for (u32 i = 0; i < N; ++i) {
+        for (u32 j = 0; j < N; ++j) {
+            mass_matrix(i, j) = 0.0;
+        }
+    
+        // Diagonal elements: sum of spring stiffness and harmonic potential
+        mass_matrix(i, i) = diag_spring + diag_potential;
+    
+        // Off-diagonal elements (nearest neighbors)
+        u32 next = (i + 1) % N;
+        u32 prev = (i + N - 1) % N;
+        
+        mass_matrix(i, next) = off_diag_spring;
+        mass_matrix(i, prev) = off_diag_spring;
+    }
+
+    // std::cout << "Mass Matrix:\n";
+    // std::cout << mass_matrix << "\n";
 
     // 5. Run the Integrator
     // The step size must be positive, and the number of steps must be greater than zero
-    d64 stepSize = 0.08;  // Leapfrog step size (epsilon)
+    d64 stepSize = 0.5;  // Leapfrog step size (epsilon)
     u32 numSteps = 15;    // Number of leapfrog steps (L)
     u32 maxN = 50000;     // Total MCMC iterations
     
