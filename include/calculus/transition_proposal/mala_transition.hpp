@@ -24,7 +24,7 @@ namespace sample {
                 std::mt19937& gen) const {
                 std::normal_distribution<d64> dist(0.0, 1.0);
                 linalg::Vec<d64> noise = gradCurrent * (h_ / 2.0) + 
-                    linalg::Vec<d64>::random(current.size(), dist, gen);
+                    linalg::Vec<d64>::random(current.size(), dist, gen) * std::sqrt(h_);
                 return current + noise;
             }
             // Normalization isnt strictly needed but is very easy and cheap to include here
