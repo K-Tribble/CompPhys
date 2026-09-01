@@ -53,4 +53,3 @@ struct CubicSplineResult {
 // The BCs specify the value of the second derivative at the boundaries
 // x must be strictly increasing, although it isnt enforced, if it isn't then the result is meaningless
 CubicSplineResult cubicSpline(std::span<const d64> x, std::span<const d64> yKnown, d64 leftBC = 0.0, d64 rightBC = 0.0);
-
