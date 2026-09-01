@@ -334,13 +334,13 @@ namespace sample {
             u32 accepted = 0;
             u32 N = 0;
             linalg::Vec<d64> currentSample = initial;
-            d64 logCurrentDensity = target.logDensity(currentSample);
+            d64 logDensityCurrent = target.logDensity(currentSample);
             linalg::Vec<d64> gradCurrent = target.gradLogDensity(currentSample);
 
             while (N < maxN) {
                 ++N;
 
-                linalg::Vec<d64> proposedSample = proposal.sampleFromgrad(currentSample, gradCurrent, gen);
+                linalg::Vec<d64> proposedSample = proposal.sampleFromGrad(currentSample, gradCurrent, gen);
                 d64 logDensityProposed = target.logDensity(proposedSample);
                 linalg::Vec<d64> gradProposed = target.gradLogDensity(proposedSample);
 

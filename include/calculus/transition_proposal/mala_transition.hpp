@@ -20,7 +20,7 @@ namespace sample {
                 return logDensityFromGrad(from, target_.gradLogDensity(from), to);
             }
 
-            linalg::Vec<d64> sampleFromgrad(const linalg::Vec<d64>& current, const linalg::Vec<d64>& gradCurrent, 
+            linalg::Vec<d64> sampleFromGrad(const linalg::Vec<d64>& current, const linalg::Vec<d64>& gradCurrent, 
                 std::mt19937& gen) const {
                 std::normal_distribution<d64> dist(0.0, 1.0);
                 linalg::Vec<d64> noise = gradCurrent * (h_ / 2.0) + 
