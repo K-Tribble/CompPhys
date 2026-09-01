@@ -52,7 +52,7 @@ private:
     d64 m_, omega_, lambda_, dtau_;
 };
 
-void run_pimc_simulation() {
+void run_pimc_simulation_mala() {
     // 1. Physical Parameters
     u32 N = 100;         // Number of imaginary time slices (beads)
     d64 m = 1.0;         // Mass
@@ -85,9 +85,9 @@ void run_pimc_simulation() {
 
     // 4. Run the Integrator
     d64 h = 1.14e-2;     // Transition proposal variance - must be positive for MALA
-    u32 maxN = 50000;  // Total MCMC iterations
+    u32 maxN = 5000000 ;  // Total MCMC iterations
     
-    // Call the convenience overload of MALA which owns its own engine[cite: 1]
+    // Call the convenience overload of MALA which owns its own engine
     calculus::sample::MCMCResult res = calculus::sample::mala(
         target, 
         observable_x2, 
@@ -97,6 +97,65 @@ void run_pimc_simulation() {
     );
 
     // 5. Access Results
+    std::cout << "MALA Result:\n";
+    std::cout << "Expectation Value <x^2>: " << res.value << "\n";
+    std::cout << "Acceptance Rate:         " << res.acceptanceRate << "\n";
+    std::cout << "Effective Sample Size:   " << res.effectiveSampleSize << "\n";
+    std::cout << "Monte Carlo Error:       " << res.finalError << "\n";
+}
+
+void run_pimc_simulation_hmc() {
+    // 1. Physical Parameters
+    u32 N = 100;         
+    d64 m = 1.0;         
+    d64 omega = 1.0;     
+    d64 lambda = 0.1;    
+    d64 beta = 5.0;      
+    
+    QuantumAnharmonicOscillator target(N, m, omega, lambda, beta);
+
+    // 2. Initialization
+    // The initial sample dimension must match the target distribution dimension.
+    linalg::Vec<d64> initial(N);
+    std::mt19937 gen(std::random_device{}());
+    std::normal_distribution<d64> thermal_noise(0.0, 0.01);
+    
+    for (u32 i = 0; i < N; ++i) {
+        initial(i) = thermal_noise(gen); 
+    }
+
+    // 3. Define the Observable
+    auto observable_x2 = [](const linalg::Vec<d64>& x) {
+        d64 sum_sq = 0.0;
+        for (u32 i = 0; i < x.size(); ++i) {
+            sum_sq += x(i) * x(i);
+        }
+        return sum_sq / x.size();
+    };
+
+    // 4. Construct the Mass Matrix
+    // The mass matrix must be square and match the dimension of the initial position.
+    linalg::Matrix<d64> mass_matrix = linalg::Matrix<d64>::identity(N); 
+
+    // 5. Run the Integrator
+    // The step size must be positive, and the number of steps must be greater than zero
+    d64 stepSize = 0.08;  // Leapfrog step size (epsilon)
+    u32 numSteps = 15;    // Number of leapfrog steps (L)
+    u32 maxN = 50000;     // Total MCMC iterations
+    
+    // Call the convenience overload of HMC which owns its own random engine
+    calculus::sample::MCMCResult res = calculus::sample::hmc(
+        target, 
+        observable_x2, 
+        initial, 
+        mass_matrix,
+        stepSize,
+        numSteps,
+        maxN
+    );
+
+    // 6. Access Results
+    std::cout << "HMC Results:\n";
     std::cout << "Expectation Value <x^2>: " << res.value << "\n";
     std::cout << "Acceptance Rate:         " << res.acceptanceRate << "\n";
     std::cout << "Effective Sample Size:   " << res.effectiveSampleSize << "\n";
@@ -104,6 +163,7 @@ void run_pimc_simulation() {
 }
 
 int main() {
-    run_pimc_simulation();
+    run_pimc_simulation_mala();
+    run_pimc_simulation_hmc();
     return 0;
 }
