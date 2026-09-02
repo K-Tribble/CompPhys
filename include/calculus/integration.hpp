@@ -302,7 +302,7 @@ namespace sample {
     // Convenience overload for metropolisHastings: owns its own engine, seeded from random_device, 
     // when reproducibility isn't needed.
     template <typename F>
-    inline MCMCResult metropolisHastings(const TargetDistribution& target, const Proposal& proposal, F&& f,
+    inline MCMCResult metropolisHastings(const TargetDistribution& target, const TransitionProposal& proposal, F&& f,
         const linalg::Vec<d64>& initial, u32 maxN = 10000, u32 maxLag = 0,
         ESSMethod essMethod = ESSMethod::Geyer, std::optional<d64> C = std::nullopt) {
             thread_local std::mt19937 gen(std::random_device{}());

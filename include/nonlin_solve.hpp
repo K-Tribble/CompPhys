@@ -104,7 +104,7 @@ namespace nonlin {
         bool foundRoot = false;
 
         while (numIter < maxIter) {
-            d64 fi = func(xi);
+            d64 fi = f_ip1;
             d64 f_primei = deriv(xi);
 
             if (std::fabs(f_primei) < kDefaultAbsTol) {
@@ -117,7 +117,9 @@ namespace nonlin {
             xi = x_ip1;
             ++numIter;
 
-            if (std::fabs(fi) < functionTol) {
+            d64 f_ip1 = func(xi);
+
+            if (std::fabs(f_ip1) < functionTol) {
                 converged = true;
                 foundRoot = true;
                 break;
