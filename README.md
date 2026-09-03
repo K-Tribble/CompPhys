@@ -77,6 +77,7 @@ This project contains implementations developed while studying the Computational
 
 **Numerical Integration** (`calculus/integration.hpp`)
 - Trapezoidal and Simpsons rule with adaptive refinement
+- Monte Carlo integration over axis-aligned hyperrectangles
 - Automatic convergence detection based on Richardson extrapolation
 - Configurable stopping conditions and iteration limits
 - Convergence tracking with error estimation
@@ -85,6 +86,28 @@ This project contains implementations developed while studying the Computational
   - Convergence status
   - Final error estimate
   - Number of iterations performed
+
+**Sampling and Monte Carlo Methods** (`calculus/integration.hpp`)
+- Self-normalized importance sampling with effective sample size diagnostics
+- Metropolis-Hastings sampling with general transition proposals
+- Isotropic Gaussian Metropolis-Hastings convenience function
+- Metropolis-adjusted Langevin algorithm (MALA)
+- Hamiltonian Monte Carlo (HMC) with configurable mass matrix and leapfrog steps
+- Reproducible overloads accepting a caller-owned random-number generator
+- Convenience overloads with thread-local engines seeded from `std::random_device`
+
+**Sampling Infrastructure** (`calculus/accumulators.hpp` and related headers)
+- Welford online mean and variance accumulation
+- Numerically stable log-weight accumulation for importance sampling
+- Sokal and Geyer integrated autocorrelation-time estimates
+- Target-distribution interface for unnormalized log densities
+- Analytic and finite-difference differentiable target interfaces
+- Gaussian target, Gaussian proposal, Gaussian transition, and MALA transition implementations
+
+**Integration Results** (`calculus/integral_results.hpp`)
+- `IntegralResult` for deterministic and Monte Carlo integration
+- `ImportanceSampleResult` with estimate, error, convergence, and effective sample size
+- `MCMCResult` with estimate, error, acceptance rate, effective sample size, and ESS method
 
 ### Nonlinear Solvers (`nonlin_solve.hpp`)
 
@@ -107,6 +130,9 @@ This project contains implementations developed while studying the Computational
   - Separate function and variable tolerance parameters
   - Iteration limit control (default: 1000)
   - Detailed result structure with convergence information
+- **Brent's method** - bracketed hybrid method combining bisection, secant, and inverse quadratic interpolation
+  - Retains bisection's robustness while usually converging faster
+  - Requires a continuous function and an initial sign-changing bracket
 
 ### Interpolation (`interpolation.hpp`)
 
@@ -130,12 +156,15 @@ This project contains implementations developed while studying the Computational
 - `kDefaultAbsTol = 1e-10` - default absolute tolerance for general use
 - `kDefaultRelTol = 1e-10` - default relative tolerance for general use
 - `kIterStopCondition = 1e-14` - default iteration stopping condition
+- `kMonteCarloStopCondition = 1e-4` - default Monte Carlo stopping condition
 - `kSingularPivotTol = 100.0` - pivot tolerance for singular matrix detection (machine epsilon multiplier)
 
 ## Project Structure
 
 ```
 CompPhys/
+├── .github/workflows/
+│   └── ci.yml                 # GitHub Actions build and test workflow
 ├── include/                   # Header files (API definitions)
 │   ├── constants.hpp          # Global constants and tolerances
 │   ├── types.hpp              # Type aliases
@@ -143,9 +172,22 @@ CompPhys/
 │   ├── nonlin_solve.hpp       # Nonlinear root finding
 │   ├── interpolation.hpp      # Interpolation methods
 │   ├── calculus/
-│   │   ├── differentiation.hpp  # Numerical differentiation
-│   │   ├── optimize.hpp         # Numerical optimization of functions
-│   │   └── integration.hpp      # Numerical integration
+│   │   ├── accumulators.hpp       # Online statistics and ESS estimators
+│   │   ├── differentiation.hpp   # Numerical differentiation
+│   │   ├── integral_results.hpp   # Integration and sampling result types
+│   │   ├── integration.hpp       # Integration and sampling algorithms
+│   │   ├── optimize.hpp          # Numerical optimization
+│   │   ├── proposal/
+│   │   │   ├── proposal.hpp             # Proposal distribution interface
+│   │   │   └── gaussian_proposal.hpp    # Gaussian proposal distribution
+│   │   ├── target_distributions/
+│   │   │   ├── target_distribution.hpp   # Unnormalized target interface
+│   │   │   ├── differentiable_target.hpp # Differentiable and finite-difference targets
+│   │   │   └── gaussian_target.hpp       # Gaussian target distribution
+│   │   └── transition_proposal/
+│   │       ├── transition_proposal.hpp   # MCMC transition interface
+│   │       ├── gaussian_transition.hpp   # Gaussian random-walk transition
+│   │       └── mala_transition.hpp       # MALA transition
 │   └── linalg/
 │       ├── matrix.hpp              # Matrix class and operations
 │       ├── matrix.tpp              # Matrix class implementations
@@ -157,10 +199,11 @@ CompPhys/
 │       └── linalg_solve.hpp        # Solver algorithms
 │       └── linalg_solve.tpp        # Solver algorithms implementations
 ├── src/                       # Implementation files
-│   ├── main.cpp               # Main executable and examples
-│   ├── interpolation.cpp
+│   ├── main.cpp                # Main executable and examples
+│   ├── anharmonic_oscillator.cpp # PIMC example using MALA and HMC
+│   ├── interpolation.cpp       # Interpolation implementations
 │   ├── calculus/
-│   │   └── differentiation.cpp
+│   │   └── differentiation.cpp # Differentiation implementations
 ├── tests/                     # Comprehensive unit tests
 │   ├── test_vec.cpp           # Vector operations tests
 │   ├── test_matrix.cpp        # Matrix operations tests
@@ -168,17 +211,28 @@ CompPhys/
 │   ├── test_differentiation.cpp
 │   ├── test_integration.cpp
 │   ├── test_interop.cpp
-│   └── test_nonlin.cpp        # Nonlinear solver tests
-├── build/                     # Compiled objects and executables
+│   ├── test_nonlin.cpp         # Nonlinear solver tests
+│   ├── test_optimize.cpp       # Optimization tests
+│   └── test_vec.cpp             # Vector operations tests
+├── .gitignore                  # Ignored local build and editor files
 ├── Makefile                   # Build configuration
 └── README.md                  # This file
 ```
+
+The local `build/`, `.vscode/`, and `todo.txt` paths are intentionally omitted
+because they are ignored by Git.
 
 ## Building and Running
 
 ### Requirements
 - C++20 compatible compiler (g++ 10.0 or later recommended)
 - Standard C++ library with C++20 support
+
+### Dependencies
+- Catch2 for the test executable
+- OpenMP (`libomp` on macOS; compiler OpenMP support on Linux)
+
+On macOS, the Makefile expects Homebrew packages named `catch2` and `libomp`.
 
 ### Compilation
 ```bash
@@ -188,13 +242,19 @@ make
 # Run main executable
 ./build/main
 
-# Run tests (if configured in Makefile)
+# Build and run all tests
 make test
+
+# Build and run the anharmonic oscillator PIMC example
+make anharmonic
+./build/anharmonic
 ```
+
+Other Make targets are `run`, `clean`, `rebuild`, and `count`.
 
 ### Compiler Flags
 - `-std=c++20` - C++20 standard
-- `-O3` - Optimization level 3 for production performance
+- `-O2` - Optimization level used by the Makefile
 - `-Wall -Wextra` - All warnings enabled for code quality
 - `-Iinclude` - Include directory specification
 
@@ -304,6 +364,45 @@ if (simpsonsResult.converged) {
 }
 ```
 
+#### Monte Carlo Integration
+```cpp
+#include "calculus/integration.hpp"
+
+auto f = [](const linalg::Vec<d64>& x) { return x(0) * x(0); };
+std::vector<d64> left = {0.0};
+std::vector<d64> right = {1.0};
+std::mt19937 gen(1234);  // Caller-owned engine for reproducible samples
+
+auto result = calculus::integrate::mc(f, left, right, gen, 1e-4, 10000);
+```
+
+### Sampling
+
+Target distributions expose an unnormalized `logDensity`. Differentiable
+targets additionally expose `gradLogDensity`, which is required by MALA and
+HMC. `GaussianTarget`, `GaussianProposal`, and
+`IsotropicGaussianTransition` provide ready-to-use Gaussian components.
+
+```cpp
+#include "calculus/integration.hpp"
+
+linalg::Vec<d64> mean = {0.0, 0.0};
+calculus::sample::GaussianTarget target(mean, 1.0);
+linalg::Vec<d64> initial = {0.0, 0.0};
+
+auto observable = [](const linalg::Vec<d64>& x) {
+  return x(0) * x(0) + x(1) * x(1);
+};
+
+std::mt19937 gen(1234);
+auto result = calculus::sample::mala(target, observable, initial, 0.1, gen,
+                   10000);
+```
+
+The tracked anharmonic-oscillator example in
+`src/anharmonic_oscillator.cpp` demonstrates path-integral Monte Carlo with
+both MALA and HMC.
+
 ### Nonlinear Solvers
 
 #### Root Finding
@@ -384,6 +483,8 @@ The project includes comprehensive unit tests covering:
 - Numerical differentiation (all schemes)
 - Numerical integration (convergence behavior)
 - Nonlinear root finding (every method on different types of functions)
+- Numerical optimization (gradient descent and Newton's method)
+- Monte Carlo integration and sampling infrastructure
 - Interoperability between vector and matrix types
 
 Tests are located in the `tests/` directory and validate correctness of implementations.
