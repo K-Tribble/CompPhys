@@ -136,7 +136,7 @@ struct MCMCAccumulator {
             for (u32 i = 0; i < count - lag; ++i) {
                 ac += (samples[i] - mean) * (samples[i + lag] - mean);
             }
-            ac /= static_cast<d64>(count - lag);
+            ac /= static_cast<d64>(count);
             autoCorrelation.push_back(ac / variance);
         }
     }
@@ -172,12 +172,10 @@ struct MCMCAccumulator {
                 runningSum += autoCorrelation[m];
                 d64 t_int = 1.0 + 2.0 * runningSum;
                 if (static_cast<d64>(m) >= C * t_int) {
-                    return t_int;
+                    std::max(return t_int, 1.0);
                 }
             }
-            throw std::runtime_error(
-                "sokalTime: no self-consistent window found within maxLag; "
-                "increase maxLag passed to finalize()");
+            return std::max(1.0 + 2.0 * runningSum, 1.0); // fall back to full window, clamped at 1
         }
  
         // requires reversible chain
@@ -190,6 +188,6 @@ struct MCMCAccumulator {
                 }
                 sumGamma += gamma_m;
             }
-            return 2.0 * sumGamma - 1.0;
+            return std::max(2.0 * sumGamma - 1.0, 1.0); // clamped at 1
         }
 };
