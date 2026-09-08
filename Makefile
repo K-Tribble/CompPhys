@@ -15,6 +15,11 @@ ifeq ($(UNAME_S),Darwin)
     CATCH2_INC    = -I$(CATCH2_PREFIX)/include
     CATCH2_LIB    = -L$(CATCH2_PREFIX)/lib
 
+    # FFTW :
+    FFTW_PREFIX  := $(shell brew --prefix fftw 2>/dev/null)
+    FFTW_INC      = -I$(FFTW_PREFIX)/include
+    FFTW_LIB      = -L$(FFTW_PREFIX)/lib
+
 else
 
     # Linux
@@ -28,14 +33,26 @@ else
     CATCH2_INC    =
     CATCH2_LIB    =
 
+    # FFTW (optional): make FFTW=1 ...
+    FFTW_INC      =
+    FFTW_LIB      =
+
 endif
+
+
+# FFTW is required by include/mcmc/chain_stats.hpp.
+#   Linux: sudo apt-get install -y libfftw3-dev
+#   macOS: brew install fftw
+FFTW_FLAGS   = $(FFTW_INC)
+FFTW_LDFLAGS = $(FFTW_LIB) -lfftw3
 
 
 CXXFLAGS = -std=c++20 -Wall -Wextra -O2 \
            -Iinclude \
-           $(OMP_FLAGS)
+           $(OMP_FLAGS) \
+           $(FFTW_FLAGS)
 
-LDFLAGS = $(OMP_LDFLAGS)
+LDFLAGS = $(OMP_LDFLAGS) $(FFTW_LDFLAGS)
 
 
 
@@ -63,6 +80,15 @@ build/%.o: src/%.cpp
 run: $(TARGET)
 	./$(TARGET)
 
+ISING_SRC = src/ising_demo.cpp
+ISING_TARGET = build/ising
+
+ising: $(ISING_TARGET)
+
+$(ISING_TARGET): $(ISING_SRC)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< $(LDFLAGS) -o $@
+
 ANHARMONIC_SRC = src/anharmonic_oscillator.cpp
 ANHARMONIC_TARGET = build/anharmonic
 
@@ -81,6 +107,7 @@ TEST_SRC = tests/test_vec.cpp \
            tests/test_nonlin.cpp \
            tests/test_linalg_solve.cpp \
            tests/test_optimize.cpp \
+           tests/test_ising.cpp \
            src/calculus/differentiation.cpp
 
 TEST_TARGET = build/tests
@@ -113,4 +140,4 @@ count:
 		xargs -0 wc -l
 
 
-.PHONY: all run anharmonic test clean rebuild count
+.PHONY: all run anharmonic ising test clean rebuild count
