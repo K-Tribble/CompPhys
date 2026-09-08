@@ -105,7 +105,7 @@ namespace detail {
 
         std::vector<d64> gamma(maxLag + 1, 0.0);
 
-        for (u32 k = 0; k < maxLag; ++k) {
+        for (u32 k = 0; k <= maxLag; ++k) {
             gamma[k] = real[k] / (static_cast<d64>(m) * static_cast<d64>(n));
         }
 
@@ -153,7 +153,7 @@ inline std::vector<d64> autocorrelation(std::span<const d64> x, u32 maxLag = 0) 
         return rho;
     }
 
-    for (u32 k = 0; k < maxLag; ++k) {
+    for (u32 k = 0; k <= maxLag; ++k) {
         rho[k] = gamma[k] / gamma[0];
     }
     return rho;
