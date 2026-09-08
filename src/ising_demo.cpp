@@ -101,6 +101,6 @@ int main(int argc, char** argv) {
     }
 
     std::printf("\nwrote %zu runs to %s/\n", temps.size(), dir.c_str());
-    std::printf("analyse with: python3 analysis/analyse_ising.py %s\n", dir.c_str());
+    std::printf("analyse with: python3 analysis/analyze_ising.py %s\n", dir.c_str());
     return 0;
 }
