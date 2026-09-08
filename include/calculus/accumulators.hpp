@@ -172,7 +172,7 @@ struct MCMCAccumulator {
                 runningSum += autoCorrelation[m];
                 d64 t_int = 1.0 + 2.0 * runningSum;
                 if (static_cast<d64>(m) >= C * t_int) {
-                    std::max(return t_int, 1.0);
+                    return std::max(t_int, 1.0);
                 }
             }
             return std::max(1.0 + 2.0 * runningSum, 1.0); // fall back to full window, clamped at 1
