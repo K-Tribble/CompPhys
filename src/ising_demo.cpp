@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 
     std::vector<d64> temps;
     for (u32 i = 0; i <= 58; ++i) {
-        temps.push_back(3.4 - 0.05 * static_cast<d64>(i));
+        temps.push_back((340 - 5*i)/100.0);
     }
 
 
