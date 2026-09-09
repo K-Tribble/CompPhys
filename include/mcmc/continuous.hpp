@@ -134,6 +134,7 @@ class HMCStepper {
 public:
     using State = linalg::Vec<d64>;
 
+    // Constructor that takes the mass matrix, then calcualte the inverse and cholesky decomposed L
     HMCStepper(const calculus::sample::DifferentiableTarget& target,
                linalg::Vec<d64> initial,
                const linalg::Matrix<d64>& massMatrix,
@@ -159,6 +160,21 @@ public:
         potential_ = -target_->logDensity(x_);
     }
 
+    // Constructor that takes inverse mass matrix, and the cholesky decomposed L where M=LL_transpose
+    HMCStepper(const calculus::sample::DifferentiableTarget& target,
+               linalg::Vec<d64> initial,
+               const linalg::Matrix<d64>& massMatrixInverse, const linalg::Matrix<d64> choleskyL,
+               d64 stepSize, u32 numSteps, bool jitter = true)
+        : target_(&target), x_(std::move(initial)), stepSize_(stepSize),
+            numSteps_(numSteps), jitter_(jitter) {
+        const u32 n = x.size();
+        if (target_->dim() != n) {
+            throw std::invalid_argument("HMCStepper: initial state dimension must match");
+        }
+        if ()
+    }
+
+
     void sweep(std::mt19937& gen) {
         std::normal_distribution<d64> normal(0.0, 1.0);
         const u32 n = x_.size();
@@ -174,7 +190,7 @@ public:
             steps = std::uniform_int_distribution<u32>(low, high)(gen);
         }
 
-        linalg::VEc<d64> q = x_;
+        linalg::Vec<d64> q = x_;
         p += target_->gradLogDensity(q) * (0.5 * stepSize_);
         for (u32 i = 0; i < steps; ++i) {
             q += (mInverse_ * p) * stepSize_;
