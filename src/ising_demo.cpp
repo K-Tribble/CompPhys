@@ -73,6 +73,8 @@ int main(int argc, char** argv) {
         const u32 ie = res.obsIndex("e");
         const u32 imm = res.obsIndex("m");
         const u32 im = res.obsIndex("abs_m");
+        const u32 im2 = res.obsIndex("m2");
+        const u32 im4 = res.obsIndex("m4");
 
         char stem[512];
         std::snprintf(stem, sizeof(stem), "%s/ising_L%zu_T%.4f", dir.c_str(), L, T);

@@ -132,11 +132,11 @@ private:
 };
 
 // Default observable set, only calcualte energy per spin - e, 
-// magnetization per spin - m, and |m|, |m| is compute because it
-// is the finite order parameter
+// magnetization per spin - m, and |m|, |m| is computd because it
+// is the finite order parameter. Also compute m^2 and m^4
 struct IsingObservables {
     std::vector<std::string> names() const {
-        return {"e", "m", "abs_m"};
+        return {"e", "m", "abs_m", "m2", "m4"};
     }
 
     void eval(const Ising2D& s, std::span<d64> out) const {
@@ -145,6 +145,8 @@ struct IsingObservables {
         out[0] = e;
         out[1] = m;
         out[2] = std::abs(m);
+        out[3] = m * m;
+        out[4] = m * m * m * m;
     }
 };
 
