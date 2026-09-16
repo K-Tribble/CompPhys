@@ -1,4 +1,4 @@
-#pragme once
+#pragma once
 
 #include <cmath>
 #include <limits>
@@ -145,7 +145,7 @@ public:
         if (target_->dim() != n) {
             throw std::invalid_argument("HMCStepper: initial state dimension mismatch");
         }
-        if (massMatrix.rows() !+ n || massMatrix.cols() !+ n) {
+        if (massMatrix.rows() != n || massMatrix.cols() != n) {
             throw std::invalid_argument("HMCStepper: mass matrix shape mismatch");
         }
         if (stepSize <= 0.0) {
@@ -165,13 +165,20 @@ public:
                linalg::Vec<d64> initial,
                const linalg::Matrix<d64>& massMatrixInverse, const linalg::Matrix<d64> choleskyL,
                d64 stepSize, u32 numSteps, bool jitter = true)
-        : target_(&target), x_(std::move(initial)), stepSize_(stepSize),
-            numSteps_(numSteps), jitter_(jitter) {
+        : target_(&target), x_(std::move(initial)), mInverse_(massMatrixInverse), chol_(choleskyL), 
+        stepSize_(stepSize), numSteps_(numSteps), jitter_(jitter) {
         const u32 n = x.size();
         if (target_->dim() != n) {
             throw std::invalid_argument("HMCStepper: initial state dimension must match");
         }
-        if ()
+        if (mInverse_.rows() != n || mInverse_.cols() != n) {
+            throw std::invalid_argument("HMCStepper: Inverse mass matrix shape mismatch");
+        }
+        if (chol_.rows() != n || chol_.cols() != n) {
+            throw std::invalid_argument("HMCStepper: Cholesky Lower shape mismatch");
+        }
+
+        potential_ = -target_->logDensity(x_);
     }
 
 
