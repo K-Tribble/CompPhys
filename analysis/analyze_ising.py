@@ -21,7 +21,7 @@ U_STAR = 0.6106
 # `m` changes sign only on a tunnelling event, so its tau and R-hat describe
 # the +-m degeneracy rather than the sampling. Everything blocked below is
 # sign-symmetric.
-SYMMETRIC = ("e", "abs_m")
+SYMMETRIC = ("e", "e2", "abs_m", "m2", "m4")
 
 DEFAULT_MIN_BLOCKS = 32
 REQUIRED = ("e", "m", "abs_m")
@@ -124,12 +124,15 @@ def analyze(json_path, min_blocks=DEFAULT_MIN_BLOCKS):
     e = data[:, :, cols["e"]]
     m = data[:, :, cols["m"]]
     am = data[:, :, cols["abs_m"]]
+    e2 = data[:, :, cols["e2"]] if "e2" in cols else e ** 2
+    m2 = data[:, :, cols["m2"]] if "m2" in cols else m ** 2
+    m4 = data[:, :, cols["m4"]] if "m4" in cols else m ** 4
     nchain, ndraw = e.shape
 
     block_len, starved, tau_sweeps = choose_block_len(
         meta, nchain, ndraw, min_blocks)
 
-    series = np.stack([e, e ** 2, am, m ** 2, m ** 4], axis=-1)
+    series = np.stack([e, e2, am, m2, m4], axis=-1)
     blocks = block_means(series, block_len)
 
     rhats = [r for name, r in zip(meta["observables"], meta["r_hat"])
@@ -142,6 +145,9 @@ def analyze(json_path, min_blocks=DEFAULT_MIN_BLOCKS):
         "beta": beta,
         "L": meta["L"],
         "N": N,
+        "direction": meta.get("direction", ""),
+        "frozen": meta.get("frozen", False),
+        "ess_below_target": meta.get("ess_below_target", False),
         "block_len": block_len,
         "n_blocks": blocks.shape[0],
         "dropped_per_chain": ndraw - (ndraw // block_len) * block_len,
@@ -150,8 +156,8 @@ def analyze(json_path, min_blocks=DEFAULT_MIN_BLOCKS):
         "r_hat": max(rhats) if rhats else float("nan"),
         "ess": min(esses) if esses else float("nan"),
         "sectors": sorted(set(int(np.sign(v)) for v in m.mean(axis=1))),
-        "accept": float(np.mean([a for a in meta["accepted_fraction"]
-                                 if a is not None])),
+        "accept": meta.get("accepted_fraction_mean") or float(
+            np.mean([a for a in meta["accepted_fraction"] if a is not None])),
     }
 
     def jk(key, estimator):
@@ -186,15 +192,25 @@ def peak_temperature(rows):
     return x1 if a == 0.0 else -b / (2.0 * a)
 
 
-def report(by_L):
-    """Print one table per lattice size, then extrapolate Tc if possible."""
-    for L in sorted(by_L):
-        rows = by_L[L]
-        print(f"\nL = {L}   N = {rows[0]['N']}   exact T_c = {TC_EXACT:.6f}")
+def label(key):
+    L, direction = key
+    return f"L = {L}" + (f" ({direction})" if direction else "")
+
+
+def report(by_run):
+    """Print one table per run, then extrapolate Tc if possible."""
+    for key in sorted(by_run):
+        rows = by_run[key]
+        print(f"\n{label(key)}   N = {rows[0]['N']}   "
+              f"exact T_c = {TC_EXACT:.6f}")
         print(f"{'T':>7} {'e':>19} {'|m|':>18} {'chi':>16} {'C':>15} "
               f"{'U':>15} {'tau':>8} {'Rhat':>6} {'blk':>6} {'nblk':>6}")
         for r in rows:
             flags = ""
+            if r["frozen"]:
+                flags += " frozen"
+            if r["ess_below_target"]:
+                flags += " ESS<target"
             if r["starved"]:
                 flags += " blocks<2tau"
             if r["r_hat"] > 1.01:
@@ -225,15 +241,23 @@ def report(by_L):
         print(f"  chi peaks at T = {peak_temperature(rows):.4f} "
               f"(exact bulk T_c = {TC_EXACT:.4f})")
 
-    if len(by_L) >= 2:
-        Ls = np.array(sorted(by_L), dtype=float)
-        Tp = np.array([peak_temperature(by_L[int(L)]) for L in Ls])
+    directions = {}
+    for L, direction in by_run:
+        directions.setdefault(direction, []).append(L)
+
+    for direction, sizes in sorted(directions.items()):
+        if len(sizes) < 2:
+            continue
+        Ls = np.array(sorted(sizes), dtype=float)
+        Tp = np.array([peak_temperature(by_run[(int(L), direction)]) for L in Ls])
         slope, intercept = np.polyfit(1.0 / Ls, Tp, 1)
-        print(f"\nfinite-size extrapolation over L = "
+        tag = f" ({direction})" if direction else ""
+        print(f"\nfinite-size extrapolation{tag} over L = "
               f"{', '.join(str(int(L)) for L in Ls)}:")
         print(f"  T_c(L) = {intercept:.4f} + {slope:.3f}/L   "
               f"(exact {TC_EXACT:.4f}, error {intercept - TC_EXACT:+.4f})")
-    elif len(by_L) == 1:
+
+    if all(len(sizes) < 2 for sizes in directions.values()):
         print("\nonly one L present; add more sizes to extrapolate T_c "
               "and to use the Binder crossing")
 
@@ -248,7 +272,7 @@ def write_csv(rows, path):
     print(f"\nwrote {path}")
 
 
-def plot(by_L, path):
+def plot(by_run, path):
     """Write the five-panel summary figure."""
     import matplotlib.pyplot as plt
 
@@ -264,22 +288,22 @@ def plot(by_L, path):
     flat = axes.ravel()
     flat[-1].axis("off")
 
-    for ax, (key, label, scale) in zip(flat, panels):
-        for L in sorted(by_L):
-            rows = by_L[L]
+    for ax, (key, axis_label, scale) in zip(flat, panels):
+        for run in sorted(by_run):
+            rows = by_run[run]
             T = np.array([r["T"] for r in rows])
             y = np.array([r[key] for r in rows])
             yerr = np.array([r[key + "_err"] for r in rows])
             ax.errorbar(T, y, yerr=yerr, fmt="o-", ms=3, lw=1, capsize=2,
-                        label=f"L = {L}")
+                        label=label(run))
         ax.axvline(TC_EXACT, ls="--", c="k", lw=0.8)
         ax.set_xlabel("T")
-        ax.set_ylabel(label)
+        ax.set_ylabel(axis_label)
         if scale:
             ax.set_yscale(scale)
 
-    Tmin = min(r["T"] for rows in by_L.values() for r in rows)
-    Tmax = max(r["T"] for rows in by_L.values() for r in rows)
+    Tmin = min(r["T"] for rows in by_run.values() for r in rows)
+    Tmax = max(r["T"] for rows in by_run.values() for r in rows)
 
     dense = np.linspace(Tmin, TC_EXACT, 400)
     flat[0].plot(dense, [onsager_m(t) for t in dense], "r-", lw=1,
@@ -314,6 +338,7 @@ def main(argv=None):
     files = []
     for d in args.directories:
         files.extend(sorted(glob.glob(os.path.join(d, "*.json"))))
+        files.extend(sorted(glob.glob(os.path.join(d, "*", "*.json"))))
     if not files:
         print(f"no runs found in {', '.join(args.directories)}", file=sys.stderr)
         return 1
@@ -330,18 +355,19 @@ def main(argv=None):
     if not rows:
         return 1
 
-    by_L = {}
+    by_run = {}
     for r in rows:
-        by_L.setdefault(r["L"], []).append(r)
-    for group in by_L.values():
+        by_run.setdefault((r["L"], r["direction"]), []).append(r)
+    for group in by_run.values():
         group.sort(key=lambda r: r["T"])
 
-    report(by_L)
+    report(by_run)
 
     if args.csv:
-        write_csv(sorted(rows, key=lambda r: (r["L"], r["T"])), args.csv)
+        write_csv(sorted(rows, key=lambda r: (r["L"], r["direction"], r["T"])),
+                  args.csv)
     if args.plot:
-        plot(by_L, os.path.join(args.directories[0], "ising.png"))
+        plot(by_run, os.path.join(args.directories[0], "ising.png"))
 
     return 0
 
