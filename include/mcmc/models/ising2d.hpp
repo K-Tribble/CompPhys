@@ -131,22 +131,25 @@ private:
     std::int64_t magnetization_ = 0;
 };
 
-// Default observable set, only calcualte energy per spin - e, 
-// magnetization per spin - m, and |m|, |m| is computd because it
-// is the finite order parameter. Also compute m^2 and m^4
+ 
+// Default observable set. e and m are the energy and magnetization per spin,
+// |m| is the finite-lattice order parameter. e2, m2 and m4 are also recorded
+// ESS and R-hat are computed for the quantities the specific heat, susceptibility 
+// and Binder cumulant are actually built from.
 struct IsingObservables {
     std::vector<std::string> names() const {
-        return {"e", "m", "abs_m", "m2", "m4"};
+        return {"e", "e2", "m", "abs_m", "m2", "m4"};
     }
-
+ 
     void eval(const Ising2D& s, std::span<d64> out) const {
         const d64 e = s.energyPerSite();
         const d64 m = s.magnetizationPerSite();
         out[0] = e;
-        out[1] = m;
-        out[2] = std::abs(m);
-        out[3] = m * m;
-        out[4] = m * m * m * m;
+        out[1] = e * e;
+        out[2] = m;
+        out[3] = std::abs(m);
+        out[4] = m * m;
+        out[5] = m * m * m * m;
     }
 };
 
