@@ -268,6 +268,106 @@ inline d64 splitRHat(const std::vector<std::span<const d64>>& chains) {
     return std::sqrt(varPlus / W);
 }
 
+struct EssResult {
+    d64 tau = std::numeric_limits<d64>::quiet_NaN(); // in draws
+    d64 ess = std::numeric_limits<d64>::quiet_NaN();
+    d64 varPlus = std::numeric_limits<d64>::quiet_NaN();
+};
+ 
+inline EssResult splitEss(const std::vector<std::span<const d64>>& chains, u32 maxLag = 0) {
+    EssResult out;
+    if (chains.empty()) {
+        return out;
+    }
+ 
+    u32 n = std::numeric_limits<u32>::max();
+    for (const std::span<const d64>& c : chains) {
+        n = std::min<u32>(n, c.size() / 2);
+    }
+ 
+    if (n < 4) {
+        return out;
+    }
+ 
+    if (maxLag == 0 || maxLag > n - 1) {
+        maxLag = n - 1;
+    }
+ 
+    const u32 m = 2 * chains.size();
+ 
+    std::vector<d64> segMean(m, 0.0);
+    std::vector<d64> segVar(m, 0.0);
+    std::vector<std::vector<d64>> segGamma(m);
+ 
+    u32 j = 0;
+    for (const std::span<const d64>& c : chains) {
+        for (u32 half = 0; half < 2; ++half, ++j) {
+            const d64* p = c.data() + half * n;
+ 
+            d64 mu = 0.0;
+            for (u32 i = 0; i < n; ++i) {
+                mu += p[i];
+            }
+            mu /= static_cast<d64>(n);
+ 
+            std::vector<d64> centred(n);
+            d64 ss = 0.0;
+            for (u32 i = 0; i < n; ++i) {
+                centred[i] = p[i] - mu;
+                ss += centred[i] * centred[i];
+            }
+ 
+            segMean[j] = mu;
+            segVar[j] = ss / static_cast<d64>(n - 1);
+            segGamma[j] = detail::autocovariance(centred, maxLag);
+        }
+    }
+ 
+    d64 W = 0.0;
+    for (const d64 v : segVar) {
+        W += v;
+    }
+    W /= static_cast<d64>(m);
+ 
+    d64 grand = 0.0;
+    for (const d64 v : segMean) {
+        grand += v;
+    }
+    grand /= static_cast<d64>(m);
+ 
+    d64 B = 0.0;
+    for (const d64 v : segMean) {
+        B += (v - grand) * (v - grand);
+    }
+    B *= static_cast<d64>(n) / static_cast<d64>(m - 1);
+ 
+    const d64 varPlus = (static_cast<d64>(n - 1) * W + B) / static_cast<d64>(n);
+    out.varPlus = varPlus;
+ 
+    if (varPlus <= 0.0) {
+        // every segment is the same constant. 
+        out.varPlus = 0.0;
+        out.tau = 1.0;
+        out.ess = static_cast<d64>(m) * static_cast<d64>(n);
+        return out;
+    }
+ 
+    std::vector<d64> rho(maxLag + 1, 0.0);
+    for (u32 t = 0; t <= maxLag; ++t) {
+        d64 g = 0.0;
+        for (u32 k = 0; k < m; ++k) {
+            g += segGamma[k][t];
+        }
+        g /= static_cast<d64>(m);
+        rho[t] = 1.0 - (W - g) / varPlus;
+    }
+    rho[0] = 1.0;
+ 
+    out.tau = geyerTau(rho);
+    out.ess = static_cast<d64>(m) * static_cast<d64>(n) / out.tau;
+    return out;
+}
+
 } // namespace stats
 
 } // namespace mcmc
