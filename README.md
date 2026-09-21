@@ -1,6 +1,8 @@
 # CompPhys - Computational Physics Library
 
-This project contains implementations developed while studying the Computational Physics course at Imperial College London.
+This project contains numerical methods and Monte Carlo implementations developed while studying Computational Physics at Imperial College London.
+
+The codebase covers both classic numerical-analysis routines (linear algebra, differentiation, optimization, interpolation, integration) and the newer Markov chain Monte Carlo infrastructure used for lattice and path-integral simulations. The modern MCMC stack lives primarily under `include/mcmc/` and is exercised by the examples in `src/ising_demo.cpp` and `src/anharmonic_pimc.cpp`.
 
 ## Features
 
@@ -163,60 +165,83 @@ This project contains implementations developed while studying the Computational
 
 ```
 CompPhys/
-├── .github/workflows/
-│   └── ci.yml                 # GitHub Actions build and test workflow
-├── include/                   # Header files (API definitions)
-│   ├── constants.hpp          # Global constants and tolerances
-│   ├── types.hpp              # Type aliases
-│   ├── scalar.hpp             # Define Scalar concept 
-│   ├── nonlin_solve.hpp       # Nonlinear root finding
-│   ├── interpolation.hpp      # Interpolation methods
+├── include/                              # public headers and numerical kernels
 │   ├── calculus/
-│   │   ├── accumulators.hpp       # Online statistics and ESS estimators
-│   │   ├── differentiation.hpp   # Numerical differentiation
-│   │   ├── integral_results.hpp   # Integration and sampling result types
-│   │   ├── integration.hpp       # Integration and sampling algorithms
-│   │   ├── optimize.hpp          # Numerical optimization
+│   │   ├── accumulators.hpp             # online statistics and ESS estimators
+│   │   ├── differentiation.hpp          # numerical differentiation
+│   │   ├── integral_results.hpp         # integration and sampling result containers
+│   │   ├── integration.hpp              # older MCMC convenience routines and MC integration
+│   │   ├── optimize.hpp                 # optimization routines
 │   │   ├── proposal/
-│   │   │   ├── proposal.hpp             # Proposal distribution interface
-│   │   │   └── gaussian_proposal.hpp    # Gaussian proposal distribution
+│   │   │   ├── proposal.hpp
+│   │   │   └── gaussian_proposal.hpp
 │   │   ├── target_distributions/
-│   │   │   ├── target_distribution.hpp   # Unnormalized target interface
-│   │   │   ├── differentiable_target.hpp # Differentiable and finite-difference targets
-│   │   │   └── gaussian_target.hpp       # Gaussian target distribution
+│   │   │   ├── target_distribution.hpp
+│   │   │   ├── differentiable_target.hpp
+│   │   │   ├── gaussian_target.hpp
+│   │   │   └── finite_difference_target.hpp
 │   │   └── transition_proposal/
-│   │       ├── transition_proposal.hpp   # MCMC transition interface
-│   │       ├── gaussian_transition.hpp   # Gaussian random-walk transition
-│   │       └── mala_transition.hpp       # MALA transition
-│   └── linalg/
-│       ├── matrix.hpp              # Matrix class and operations
-│       ├── matrix.tpp              # Matrix class implementations
-│       ├── vec.hpp                 # Vector class and operations
-│       ├── vec.tpp                 # Vector implementations
-│       ├── linalg_common.hpp       # Shared linear algebra utilities
-│       ├── linalg_interop.hpp      # Interoperability utilities
-│       ├── linalg_interop.tpp      # Interoperability utilities implementations
-│       └── linalg_solve.hpp        # Solver algorithms
-│       └── linalg_solve.tpp        # Solver algorithms implementations
-├── src/                       # Implementation files
-│   ├── main.cpp                # Main executable and examples
-│   ├── anharmonic_oscillator.cpp # PIMC example using MALA and HMC
-│   ├── interpolation.cpp       # Interpolation implementations
-│   ├── calculus/
-│   │   └── differentiation.cpp # Differentiation implementations
-├── tests/                     # Comprehensive unit tests
-│   ├── test_vec.cpp           # Vector operations tests
-│   ├── test_matrix.cpp        # Matrix operations tests
-│   ├── test_linalg_solve.cpp  # Linear solver tests
+│   │       ├── transition_proposal.hpp
+│   │       ├── gaussian_transition.hpp
+│   │       └── mala_transition.hpp
+│   ├── linalg/
+│   │   ├── matrix.hpp
+│   │   ├── matrix.tpp
+│   │   ├── vec.hpp
+│   │   ├── vec.tpp
+│   │   ├── linalg_common.hpp
+│   │   ├── linalg_interop.hpp
+│   │   ├── linalg_interop.tpp
+│   │   ├── linalg_solve.hpp
+│   │   └── linalg_solve.tpp
+│   ├── mcmc/
+│   │   ├── chain_stats.hpp             # autocorrelation and ESS diagnostics
+│   │   ├── continuous.hpp              # MALA/HMC stepper wrappers around the target interface
+│   │   ├── driver.hpp                  # generic multi-chain driver and RunConfig/RunResult
+│   │   ├── io.hpp                     # output helpers and serialization
+│   │   ├── stepper.hpp                 # ChainStepper and Observables concepts
+│   │   ├── models/
+│   │   │   └── ising2d.hpp             # 2D Ising model state and energy utilities
+│   │   └── steppers/
+│   │       └── ising_stepper.hpp       # single-spin-flip Metropolis stepper
+│   ├── constants.hpp
+│   ├── interpolation.hpp
+│   ├── nonlin_solve.hpp
+│   ├── scalar.hpp
+│   ├── types.hpp
+│   └── ...
+├── src/                                  # executable examples and project-specific demos
+│   ├── main.cpp                         # general smoke-test / demonstration driver
+│   ├── ising_demo.cpp                   # modern multi-chain Ising Metropolis example
+│   ├── anharmonic_pimc.cpp              # path-integral Monte Carlo with modern mcmc infrastructure
+│   ├── anharmonic_oscillator_basic_test.cpp  # legacy prototype using initial integration.hpp MCMC API
+│   ├── interpolation.cpp
+│   └── calculus/
+│       └── differentiation.cpp
+├── tests/                                # Catch2 unit tests
+│   ├── test_vec.cpp
+│   ├── test_matrix.cpp
+│   ├── test_linalg_solve.cpp
 │   ├── test_differentiation.cpp
 │   ├── test_integration.cpp
 │   ├── test_interop.cpp
-│   ├── test_nonlin.cpp         # Nonlinear solver tests
-│   ├── test_optimize.cpp       # Optimization tests
-│   └── test_vec.cpp             # Vector operations tests
-├── .gitignore                  # Ignored local build and editor files
-├── Makefile                   # Build configuration
-└── README.md                  # This file
+│   ├── test_nonlin.cpp
+│   ├── test_optimize.cpp
+│   ├── test_ising.cpp
+│   └── test_continuous.cpp
+├── analysis/                             # analysis scripts for output data
+│   ├── analyze_anharmonic.py
+│   └── analyze_ising.py
+├── data/                                 # example output artifacts
+├── ising_data/                           # generated Ising scan outputs
+├── runs/                                 # run directories / collected output
+├── build/                                # generated binaries and object files
+├── Makefile
+├── README.md
+├── todo.txt
+├── .gitignore
+└── .github/workflows/
+    └── ci.yml
 ```
 
 The local `build/`, `.vscode/`, and `todo.txt` paths are intentionally omitted
@@ -236,19 +261,24 @@ On macOS, the Makefile expects Homebrew packages named `catch2` and `libomp`.
 
 ### Compilation
 ```bash
-# Build all source files
+# Build the core library / smoke-test executable
 make
 
-# Run main executable
+# Run the general example binary
 ./build/main
 
-# Build and run all tests
+# Build and run the full Catch2 suite
 make test
 
-# Build and run the anharmonic oscillator PIMC example
-make anharmonic
-./build/anharmonic
+# Modern MCMC examples
+make ising
+./build/ising --L 16 --direction cooling
+
+make pimc
+./build/anharmonic_pimc
 ```
+
+The current project focus is on the MCMC examples in `src/ising_demo.cpp` and `src/anharmonic_pimc.cpp`. Older standalone targets such as `make anharmonic` and the legacy prototype in `src/anharmonic_oscillator_basic_test.cpp` are retained for historical comparison, but they are not the main active API.
 
 Other Make targets are `run`, `clean`, `rebuild`, and `count`.
 
@@ -376,32 +406,66 @@ std::mt19937 gen(1234);  // Caller-owned engine for reproducible samples
 auto result = calculus::integrate::mc(f, left, right, gen, 1e-4, 10000);
 ```
 
-### Sampling
+### Sampling and MCMC Infrastructure
 
-Target distributions expose an unnormalized `logDensity`. Differentiable
-targets additionally expose `gradLogDensity`, which is required by MALA and
-HMC. `GaussianTarget`, `GaussianProposal`, and
-`IsotropicGaussianTransition` provide ready-to-use Gaussian components.
+The modern MCMC infrastructure is built around a generic driver and stepper model.
+The central abstractions are:
+
+- `mcmc::RunConfig` and `mcmc::RunResult` in `include/mcmc/driver.hpp`
+- `mcmc::ChainStepper` and `mcmc::Observables` in `include/mcmc/stepper.hpp`
+- `MALAStepper` and `HMCStepper` in `include/mcmc/continuous.hpp`
+- model-specific steppers such as `IsingMetropolis` in `include/mcmc/steppers/ising_stepper.hpp`
+
+These components let you run multiple chains, burn-in, thinning, autocorrelation diagnostics, and pooled ESS/R-hat reporting through one unified interface.
+
+#### Example: Ising model with the modern driver
+
+The current 2D Ising example in `src/ising_demo.cpp` uses a production-style `run(factory, observables, cfg, harvest)` pattern:
 
 ```cpp
-#include "calculus/integration.hpp"
+RunConfig cfg;
+cfg.sweeps = 20000;
+cfg.burnIn = 1000;
+cfg.thin = 4;
+cfg.numChains = 4;
+cfg.seed = 20260905ull;
 
-linalg::Vec<d64> mean = {0.0, 0.0};
-calculus::sample::GaussianTarget target(mean, 1.0);
-linalg::Vec<d64> initial = {0.0, 0.0};
-
-auto observable = [](const linalg::Vec<d64>& x) {
-  return x(0) * x(0) + x(1) * x(1);
+auto factory = [&](u32 c, std::mt19937& g) {
+    Ising2D model(L, 1.0, 0.0);
+    model.randomise(g);
+    return IsingMetropolis(std::move(model), beta);
 };
 
-std::mt19937 gen(1234);
-auto result = calculus::sample::mala(target, observable, initial, 0.1, gen,
-                   10000);
+const auto res = mcmc::run(factory, IsingObservables{}, cfg, harvest);
 ```
 
-The tracked anharmonic-oscillator example in
-`src/anharmonic_oscillator.cpp` demonstrates path-integral Monte Carlo with
-both MALA and HMC.
+This is the active MCMC infrastructure for lattice systems: each chain is configured independently, run with burn-in and thinning, and then merged with pooled chain diagnostics. The Ising demo also scans temperatures and writes output arrays and metadata for later analysis.
+
+#### Example: anharmonic path-integral Monte Carlo with MALA/HMC
+
+The path-integral example in `src/anharmonic_pimc.cpp` uses the same driver but with a custom differentiable target for the quantum anharmonic oscillator. The target defines a discretized Euclidean action and its gradient, and the run then uses a stepper factory that creates either a `MALAStepper` or `HMCStepper` for each chain.
+
+```cpp
+class AnharmonicPath : public calculus::sample::DifferentiableTarget {
+public:
+    d64 logDensity(const linalg::Vec<d64>& x) const override;
+    linalg::Vec<d64> gradLogDensity(const linalg::Vec<d64>& x) const override;
+};
+
+auto factory = [&](u32 c, std::mt19937& g) {
+    auto x0 = initialisePath(...);
+    return mcmc::MALAStepper(target, std::move(x0), h);
+};
+
+const RunConfig cfg{.sweeps = 5000, .burnIn = 2000, .thin = 2, .numChains = 4};
+const auto res = mcmc::run(factory, PIMCObservables{p, true}, cfg);
+```
+
+This is the modern path-integral Monte Carlo workflow in the project: a differentiable target, multi-chain driver, and diagnostics suitable for thermalized quantum systems.
+
+#### Legacy note
+
+`src/anharmonic_oscillator_basic_test.cpp` is an older test that uses the initial MCMC convenience functions from `include/calculus/integration.hpp` (`calculus::sample::mala` and `calculus::sample::hmc`). That prototype is useful for historical comparison, but the current, more general infrastructure is the newer `mcmc::run`/`ChainStepper` design used by `src/ising_demo.cpp` and `src/anharmonic_pimc.cpp`.
 
 ### Nonlinear Solvers
 
