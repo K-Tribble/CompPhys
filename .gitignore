@@ -6,10 +6,12 @@ build
 
 .vscode
 
-todo.txt
+*.txt
 
 ising_data*
 
 .venv
 
 data*
+
+runs
