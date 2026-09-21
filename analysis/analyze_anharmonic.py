@@ -275,9 +275,6 @@ def position_histogram(meta, data, bins=201, span=None):
     width = edges[1] - edges[0]
     return centres, hist / (hist.sum() * width)
 
-
-# ------------------------------------------------------------------ report
-
 def report(meta, data, args):
     beta = meta["beta"]
     print(f"N={meta['N']}  beta={beta}  dtau={meta['dtau']:.4g}  "
