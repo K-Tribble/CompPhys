@@ -17,14 +17,12 @@ import csv
 import json
 import os
 import sys
+import warnings
 
 import numpy as np
 
 SCALARS = ("E_vir", "E_prim", "E_vir_E_prim", "E_vir_sq",
            "m2", "m4", "xbar", "Rg2")
-
-
-# --------------------------------------------------------------------- io
 
 def load(stem):
     if stem.endswith(".json") or stem.endswith(".npy"):
@@ -36,23 +34,16 @@ def load(stem):
 
 
 def column(meta, data, name):
-    """(chains, draws) view of one named observable."""
     return np.asarray(data[:, :, meta["observables"].index(name)])
 
 
 def path_block(meta, data):
-    """(chains, draws, N) view of the bead positions, or None."""
     n_scalars = int(meta.get("num_scalars", len(SCALARS)))
     if data.shape[2] <= n_scalars:
         return None
     return data[:, :, n_scalars:]
 
-
-# -------------------------------------------------------------- jackknife
-
 def blocks_of(arrays, block_len):
-    """Pool (chains, draws) arrays into per-block sums. Returns (B, k) sums
-    and the block occupancy, with whole blocks only."""
     stacked = np.stack([np.asarray(a) for a in arrays], axis=-1)
     n_chains, n_draws, k = stacked.shape
     n_blocks = n_draws // block_len
@@ -62,9 +53,7 @@ def blocks_of(arrays, block_len):
     sums = trimmed.reshape(n_chains, n_blocks, block_len, k).sum(axis=2)
     return sums.reshape(n_chains * n_blocks, k), block_len
 
-
 def jackknife(sums, count, func):
-    """Leave-one-block-out jackknife of func(means)."""
     total = sums.sum(axis=0)
     n_blocks = sums.shape[0]
     n_total = count * n_blocks
@@ -81,17 +70,7 @@ def block_len_for(meta, names, factor=10.0):
             for n in names]
     return max(1, int(np.ceil(factor * max(taus))))
 
-
-# ------------------------------------------------------------ derived bits
-
 def energy_and_cv(meta, data):
-    """E from the virial estimator, and Cv = beta^2 Cov(E_vir, E_prim).
-
-    The fluctuation formula beta^2 Var(E) does NOT hold for a path integral
-    estimator: the path weight carries its own beta dependence, so
-        Cv = beta^2 [ Cov(E_vir, E_prim) - <dE_vir/dbeta> ]
-    and E_vir has no explicit beta, killing the second term.
-    """
     beta = meta["beta"]
     ev = column(meta, data, "E_vir")
     ep = column(meta, data, "E_prim")
@@ -109,7 +88,6 @@ def energy_and_cv(meta, data):
 
 
 def shape_moments(meta, data):
-    """<x^2>, <x^4>, kurtosis and the radius of gyration."""
     m2 = column(meta, data, "m2")
     m4 = column(meta, data, "m4")
     rg = column(meta, data, "Rg2")
@@ -125,18 +103,7 @@ def shape_moments(meta, data):
                 kurtosis=kurt, kurtosis_err=kurt_err,
                 Rg2=rg2, Rg2_err=rg2_err)
 
-
-# ------------------------------------------------------------- correlator
-
 def spectra_by_block(paths, block_len, global_mean):
-    """Per-block summed periodograms of the centred paths.
-
-    Periodicity in imaginary time makes the path covariance circulant, so the
-    circularly averaged autocovariance c(k) is both the best-conditioned
-    covariance estimate available and the correlator <x(0)x(k dtau)> itself.
-    Centre by the GLOBAL mean, never per draw: per-draw centring would delete
-    the q=0 centroid mode, which is physical.
-    """
     n_chains, n_draws, n_beads = paths.shape
     n_blocks = n_draws // block_len
     out = np.zeros((n_chains * n_blocks, n_beads // 2 + 1))
@@ -152,19 +119,11 @@ def spectra_by_block(paths, block_len, global_mean):
 
 
 def _logcosh(z):
-    """log cosh z, stable for large |z| (cosh(500) overflows outright)."""
     a = np.abs(z)
     return a + np.log1p(np.exp(-2.0 * a)) - np.log(2.0)
 
 
 def effective_mass(c, n_beads, dtau):
-    """Periodic effective mass, vectorised over any leading axes.
-
-    Solves  C(t)/C(t+1) = cosh(E(t-N/2)) / cosh(E(t+1-N/2))  for E by
-    bisection. Bisection on the periodic form rather than a single global
-    cosh fit, because the shape of the effective mass curve is what tells
-    you where excited states have died out and where noise takes over.
-    """
     half = n_beads / 2.0
     t = np.arange(n_beads // 2)
     c = np.asarray(c, dtype=np.float64)
@@ -195,24 +154,37 @@ def effective_mass(c, n_beads, dtau):
     return np.where(valid, out, np.nan)
 
 
-def plateau_fit(mass, mass_err, lo, hi):
-    """Inverse-variance weighted average over a window, with chi^2/dof.
-
-    chi^2/dof near 1 means the window really is a plateau. Much above 1 means
-    residual excited state contamination at the near end, or the noise at the
-    far end has been let in."""
+def plateau_fit(mass, mass_err, mass_reps, lo, hi):
     sel = np.arange(lo, hi)
-    m = mass[sel]
-    e = mass_err[sel]
-    ok = np.isfinite(m) & np.isfinite(e) & (e > 0)
-    m, e = m[ok], e[ok]
-    if m.size < 2:
-        return float("nan"), float("nan"), float("nan"), 0
-    w = 1.0 / e ** 2
-    val = np.sum(w * m) / np.sum(w)
-    err = 1.0 / np.sqrt(np.sum(w))
-    chi2 = np.sum(w * (m - val) ** 2) / (m.size - 1)
-    return float(val), float(err), float(chi2), int(m.size)
+    ok = (np.isfinite(mass[sel]) & np.isfinite(mass_err[sel]) & (mass_err[sel] > 0)
+          & np.all(np.isfinite(mass_reps[:, sel]), axis=0))
+    sel = sel[ok]
+    nan = float("nan")
+    if sel.size < 4:
+        return dict(value=nan, error=nan, naive=nan, drift=nan, drift_err=nan, n=int(sel.size))
+
+    n_blocks = mass_reps.shape[0]
+    scale = (n_blocks - 1) / n_blocks
+
+    def weighted(idx):
+        w = 1.0 / mass_err[idx] ** 2
+        w /= w.sum()
+        full = float(w @ mass[idx])
+        reps = mass_reps[:, idx] @ w
+        return full, reps
+
+    value, reps = weighted(sel)
+    error = float(np.sqrt(scale * np.sum((reps - reps.mean()) ** 2)))
+    naive = float(1.0 / np.sqrt(np.sum(1.0 / mass_err[sel] ** 2)))
+
+    half = sel.size // 2
+    fa, ra = weighted(sel[:half])
+    fb, rb = weighted(sel[half:])
+    drift = fb - fa
+    drift_err = float(np.sqrt(scale * np.sum(((rb - ra) - (rb - ra).mean()) ** 2)))
+
+    return dict(value=value, error=error, naive=naive,
+                drift=drift, drift_err=drift_err, n=int(sel.size))
 
 
 def correlator(meta, data, target_blocks=192, window=None):
@@ -242,7 +214,7 @@ def correlator(meta, data, target_blocks=192, window=None):
 
     c_full, c_err = jackknife(spec_sums, bl, c_of_k)
 
-    # jackknife the effective mass itself, so each slice gets a real error bar
+    # leave-one-block-out correlators, then an effective mass for each
     total_spec = spec_sums.sum(axis=0)
     n_blocks = spec_sums.shape[0]
     n_total = bl * n_blocks
@@ -251,14 +223,20 @@ def correlator(meta, data, target_blocks=192, window=None):
 
     mass = effective_mass(c_full, n_beads, dtau)
     mass_reps = effective_mass(c_reps, n_beads, dtau)
-    mass_err = np.sqrt((n_blocks - 1) / n_blocks
-                       * np.nansum((mass_reps - np.nanmean(mass_reps, axis=0)) ** 2,
-                                   axis=0))
+
+    # far-end slices can be NaN in every replicate once the signal is gone
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        centre = np.nanmean(mass_reps, axis=0)
+        mass_err = np.sqrt((n_blocks - 1) / n_blocks
+                           * np.nansum((mass_reps - centre) ** 2, axis=0))
+    mass_err = np.where(np.isfinite(mass), mass_err, np.nan)
 
     if window is None:
-        # start once the near-end drift has settled, stop before the signal
-        # is swamped: keep slices whose relative error is under 2 percent
-        rel = np.where(np.isfinite(mass) & (mass > 0), mass_err / mass, np.inf)
+        # start past the near-end transient, stop before the signal is
+        # swamped: keep slices whose relative error is under 2 percent
+        with np.errstate(invalid="ignore", divide="ignore"):
+            rel = np.where(np.isfinite(mass) & (mass > 0), mass_err / mass, np.inf)
         usable = np.where(rel < 0.02)[0]
         if usable.size >= 4:
             lo = max(int(0.15 * n_beads / 2), int(usable[0]))
@@ -270,11 +248,13 @@ def correlator(meta, data, target_blocks=192, window=None):
     else:
         lo, hi = window
 
-    val, err, chi2, npts = plateau_fit(mass, mass_err, lo, hi)
+    fit = plateau_fit(mass, mass_err, mass_reps, lo, hi)
 
     return dict(c=c_full, c_err=c_err, global_mean=global_mean,
                 gap=mass, gap_err=mass_err,
-                plateau=val, plateau_err=err, chi2=chi2, n_fit=npts,
+                plateau=fit["value"], plateau_err=fit["error"],
+                plateau_naive_err=fit["naive"],
+                drift=fit["drift"], drift_err=fit["drift_err"], n_fit=fit["n"],
                 fit_range=(lo, hi), dtau=dtau, n_beads=n_beads,
                 block_len=bl, n_blocks=n_blocks)
 
@@ -299,10 +279,9 @@ def position_histogram(meta, data, bins=201, span=None):
 # ------------------------------------------------------------------ report
 
 def report(meta, data, args):
-    lam = meta["lambda"]
     beta = meta["beta"]
     print(f"N={meta['N']}  beta={beta}  dtau={meta['dtau']:.4g}  "
-          f"omega={meta['omega']}  lambda={lam}  m={meta['mass_param']}")
+          f"omega={meta['omega']}  lambda={meta['lambda']}  m={meta['mass_param']}")
     print(f"chains={meta['num_chains']}  draws={meta['num_draws']}  thin={meta['thin']}  "
           f"acceptance={meta['accepted_fraction_mean']:.3f}  "
           f"divergences={int(meta.get('divergences', 0))}")
@@ -329,46 +308,91 @@ def report(meta, data, args):
           f"   [excess {sh['kurtosis'] - 3.0:+.6f}; 0 = gaussian]")
     print(f"  <Rg^2>           {sh['Rg2']:.6f} +- {sh['Rg2_err']:.6f}")
 
-    if lam == 0.0:
-        ex = exact_lattice(meta)
-        print(f"\n  lambda = 0 reference (exact at this lattice spacing):")
-        print(f"    E     {ex['E']:.8f}   dev {(en['E'] - ex['E']) / en['E_err']:+.2f} sigma")
-        print(f"    Cv    {ex['Cv']:.8f}   dev {(en['Cv'] - ex['Cv']) / en['Cv_err']:+.2f} sigma")
-        print(f"    gap   {meta['omega']:.6f} (continuum)")
-
     corr = correlator(meta, data)
     if corr is not None:
         print(f"\n  correlator C(tau) from {corr['n_beads']} beads, "
               f"global mean <x> = {corr['global_mean']:+.6f}")
         print(f"  energy gap E1-E0 = {corr['plateau']:.4f} +- {corr['plateau_err']:.4f}"
-              f"   (weighted plateau, slices {corr['fit_range'][0]}-{corr['fit_range'][1]}, "
-              f"{corr['n_fit']} pts, chi2/dof = {corr['chi2']:.2f})")
-        if corr["chi2"] > 2.0:
-            print("    chi2/dof > 2: the window is not a clean plateau, "
-                  "set it by hand after looking at the effective mass plot")
-        if lam != 0.0:
-            print(f"  first order perturbation theory: {meta['omega'] + 3 * lam:.4f}")
-    return en, sh, corr
+              f"   (slices {corr['fit_range'][0]}-{corr['fit_range'][1]}, {corr['n_fit']} pts)")
+        if np.isfinite(corr["plateau_naive_err"]) and corr["plateau_naive_err"] > 0:
+            print(f"    error is jackknifed over the whole plateau; treating the slices as "
+                  f"independent would give +- {corr['plateau_naive_err']:.4f}, "
+                  f"{corr['plateau_err'] / corr['plateau_naive_err']:.1f}x too small")
+        if np.isfinite(corr["drift_err"]) and corr["drift_err"] > 0:
+            z = corr["drift"] / corr["drift_err"]
+            print(f"    plateau drift (2nd half - 1st half): {corr['drift']:+.4f} +- "
+                  f"{corr['drift_err']:.4f}  ({z:+.1f} sigma)"
+                  f"{'   <-- not flat, choose the window by hand' if abs(z) > 2 else ''}")
+
+    ex = None
+    if not args.no_exact:
+        ex = exact_lattice(meta)
+        print(f"\n  exact reference for THIS lattice (transfer matrix, "
+              f"{ex['grid']} grid points):")
+        rows = [("E", en["E"], en["E_err"], ex["E"]),
+                ("<x^2>", sh["x2"], sh["x2_err"], ex["x2"]),
+                ("<x^4>", sh["x4"], sh["x4_err"], ex["x4"]),
+                ("kurtosis", sh["kurtosis"], sh["kurtosis_err"], ex["kurtosis"]),
+                ("<Rg^2>", sh["Rg2"], sh["Rg2_err"], None),
+                ("Cv", en["Cv"], en["Cv_err"], ex["Cv"])]
+        if corr is not None:
+            rows.append(("gap", corr["plateau"], corr["plateau_err"], ex["gap"]))
+        for name, val, err, ref in rows:
+            if ref is None:
+                continue
+            z = (val - ref) / err if err > 0 else float("nan")
+            print(f"    {name:9s} exact {ref:.7f}   sampled {val:.7f} +- {err:.7f}   "
+                  f"dev {z:+.2f} sigma")
+    return en, sh, corr, ex
+
+
+def transfer_matrix(meta, beta):
+    n = int(meta["N"])
+    m, w, lam = meta["mass_param"], meta["omega"], meta["lambda"]
+    dt = beta / n
+    half_width = max(6.0, 10.0 / np.sqrt(2.0 * m * w))
+    dx_target = np.sqrt(dt / m) / 15.0
+    grid = int(min(max(np.ceil(2 * half_width / dx_target), 400), 2500))
+    x = np.linspace(-half_width, half_width, grid)
+    dx = x[1] - x[0]
+    v = 0.5 * m * w * w * x ** 2 + lam * x ** 4
+    t = np.sqrt(m / (2 * np.pi * dt)) * np.exp(
+        -m * (x[:, None] - x[None, :]) ** 2 / (2 * dt)
+        - 0.5 * dt * (v[:, None] + v[None, :])) * dx
+    vals, vecs = np.linalg.eigh(t)
+    order = np.argsort(vals)[::-1][:40]
+    return x, dx, vals[order], vecs[:, order]
+
+
+def _thermal(meta, beta):
+    n = int(meta["N"])
+    m, w, lam = meta["mass_param"], meta["omega"], meta["lambda"]
+    x, dx, t, v = transfer_matrix(meta, beta)
+    keep = t > 0
+    t, v = t[keep], v[:, keep]
+    wts = np.exp(n * (np.log(t) - np.log(t[0])))
+    wts /= wts.sum()
+    prob = v ** 2                                   # each column sums to 1
+    x2 = float(wts @ (prob.T @ x ** 2))
+    x4 = float(wts @ (prob.T @ x ** 4))
+    energy = m * w * w * x2 + 3.0 * lam * x4        # exact lattice virial identity
+    density = (prob @ wts) / dx
+    gap = float(-np.log(t[1] / t[0]) / (beta / n))
+    return dict(x=x, density=density, x2=x2, x4=x4, E=energy, gap=gap, grid=len(x))
 
 
 def exact_lattice(meta):
-    """Exact discretised harmonic oscillator, valid only at lambda = 0."""
-    n, beta = int(meta["N"]), meta["beta"]
-    m, w = meta["mass_param"], meta["omega"]
-
-    def x2(b):
-        dt = b / n
-        q = np.arange(n)
-        h = (2 * m / dt) * (1 - np.cos(2 * np.pi * q / n)) + dt * m * w * w
-        return np.mean(1.0 / h)
-
-    e = m * w * w * x2(beta)
-    h = 1e-5 * beta
-    cv = -beta ** 2 * (m * w * w * (x2(beta + h) - x2(beta - h))) / (2 * h)
-    return dict(E=e, x2=x2(beta), Cv=cv)
+    beta = meta["beta"]
+    ref = _thermal(meta, beta)
+    h = 1e-3 * beta
+    ep = _thermal(meta, beta + h)["E"]
+    em = _thermal(meta, beta - h)["E"]
+    ref["Cv"] = -beta * beta * (ep - em) / (2 * h)
+    ref["kurtosis"] = ref["x4"] / ref["x2"] ** 2
+    return ref
 
 
-def plot(meta, data, en, sh, corr, out):
+def plot(meta, data, en, sh, corr, ex, out):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -378,22 +402,24 @@ def plot(meta, data, en, sh, corr, out):
     hist = position_histogram(meta, data)
     if hist is not None:
         x, p = hist
-        ax[0, 0].plot(x, p, lw=1.5, label="PIMC")
         g = np.exp(-x ** 2 / (2 * sh["x2"])) / np.sqrt(2 * np.pi * sh["x2"])
-        ax[0, 0].plot(x, g, "--", lw=1.2,
-                      label=f"gaussian, same $\\langle x^2\\rangle$")
-        ax[0, 0].set_xlabel("$x$")
-        ax[0, 0].set_ylabel(r"$|\psi_0(x)|^2$")
+        for a, logy in ((ax[0, 0], False), (ax[0, 1], True)):
+            a.plot(x, np.maximum(p, 1e-12), lw=1.5, label="PIMC")
+            a.plot(x, np.maximum(g, 1e-12), "--", lw=1.2,
+                   label=r"gaussian, same $\langle x^2\rangle$")
+            if ex is not None:
+                a.plot(ex["x"], np.maximum(ex["density"], 1e-12), ":", lw=1.6, color="k",
+                       label="exact (transfer matrix)")
+            a.set_xlabel("$x$")
+            a.set_xlim(x[0], x[-1])
+            if logy:
+                a.set_yscale("log")
+                a.set_ylim(1e-6, None)
+            a.legend(fontsize=8)
+        ax[0, 0].set_ylabel(r"$\rho(x)$")
         ax[0, 0].set_title(f"position distribution, excess kurtosis "
                            f"{sh['kurtosis'] - 3:+.4f}")
-        ax[0, 0].legend()
-
-        ax[0, 1].semilogy(x, np.maximum(p, 1e-12), lw=1.5, label="PIMC")
-        ax[0, 1].semilogy(x, np.maximum(g, 1e-12), "--", lw=1.2, label="gaussian")
-        ax[0, 1].set_ylim(1e-6, None)
-        ax[0, 1].set_xlabel("$x$")
         ax[0, 1].set_title("same, log scale (tails)")
-        ax[0, 1].legend()
 
     if corr is not None:
         t = np.arange(corr["n_beads"]) * corr["dtau"]
@@ -410,17 +436,14 @@ def plot(meta, data, en, sh, corr, out):
         ax[1, 1].axvspan(corr["fit_range"][0] * corr["dtau"],
                          corr["fit_range"][1] * corr["dtau"], color="C1", alpha=0.12)
         ax[1, 1].axhline(corr["plateau"], color="C1", ls="--",
-                         label=f"plateau {corr['plateau']:.3f}")
-        if meta["lambda"] != 0:
-            ax[1, 1].axhline(meta["omega"] + 3 * meta["lambda"], color="C2", ls=":",
-                             label=f"1st order PT {meta['omega'] + 3 * meta['lambda']:.3f}")
-        else:
-            ax[1, 1].axhline(meta["omega"], color="C2", ls=":", label="$\\omega$")
-        ax[1, 1].set_ylim(0, 3 * max(corr["plateau"], meta["omega"]))
+                         label=f"plateau {corr['plateau']:.4f} $\\pm$ {corr['plateau_err']:.4f}")
+        if ex is not None:
+            ax[1, 1].axhline(ex["gap"], color="k", ls=":", label=f"exact {ex['gap']:.4f}")
+        ax[1, 1].set_ylim(0, 2 * max(corr["plateau"], meta["omega"]))
         ax[1, 1].set_xlabel(r"$\tau$")
         ax[1, 1].set_ylabel(r"$E_1-E_0$")
         ax[1, 1].set_title("effective mass")
-        ax[1, 1].legend()
+        ax[1, 1].legend(fontsize=8)
 
     fig.suptitle(f"anharmonic oscillator PIMC: "
                  f"$\\lambda$={meta['lambda']}, $\\beta$={meta['beta']}, N={meta['N']},  "
@@ -436,10 +459,12 @@ def main():
     ap.add_argument("--plot", action="store_true")
     ap.add_argument("--out", default=None)
     ap.add_argument("--csv", default=None)
+    ap.add_argument("--no-exact", action="store_true",
+                    help="skip the transfer-matrix exact reference")
     args = ap.parse_args()
 
     meta, data = load(args.stem)
-    en, sh, corr = report(meta, data, args)
+    en, sh, corr, ex = report(meta, data, args)
 
     if args.csv:
         with open(args.csv, "w", newline="") as fh:
@@ -456,7 +481,7 @@ def main():
 
     if args.plot:
         out = args.out or (os.path.splitext(args.stem)[0] + ".png")
-        plot(meta, data, en, sh, corr, out)
+        plot(meta, data, en, sh, corr, ex, out)
     return 0
 
 

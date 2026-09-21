@@ -85,7 +85,7 @@ struct PIMCObservables {
 
     static constexpr u32 numScalars = 8;
     std::vector<std::string> names () const {
-        std::vector<std::vector> v = {"E_vir", "E_prim", "E_vir_E_prim", "E_vir_sq",
+        std::vector<std::string> v = {"E_vir", "E_prim", "E_vir_E_prim", "E_vir_sq",
                                         "m2", "m4", "xbar", "Rg2"};
 
         if (recordPath) {
@@ -229,7 +229,7 @@ MassEstimate estimateMass(const RunResult& res, const Params& p, u32 pathOffset,
             const u32 last = nyquist ? qHi - 1 : qHi;
             for (u32 q = 1; q <= last; ++q) {
                 acc += 2.0 * valueAt(q)
-                     * std::cos(2.0 * std::number::pi * static_cast<d64>(q) * static_cast<d64>(k) / dN);
+                     * std::cos(2.0 * M_PI * static_cast<d64>(q) * static_cast<d64>(k) / dN);
             }
             row[k] = acc / dN;
         }
@@ -386,7 +386,7 @@ struct Args {
     u32 thin = 1;
     d64 eps = 0.3;
     d64 epsMax = 0.6;
-    d64 traj = std::number::pi / 2.0;   // whitened modes have unit frequency, period 2 pi
+    d64 traj = M_PI / 2.0;   // whitened modes have unit frequency, period 2 pi
     u32 leapSteps = 0;       // 0 = derive from traj / eps
     u32 denseDraws = 20000;
     bool recordPath = true;
@@ -471,7 +471,7 @@ linalg::Vec<d64> makeStart(u32 N, std::mt19937& g, d64 spread) {
 // Exact reference at lambda = 0
 struct ExactHO {
     d64 energy, x2, heatCapacity;
-    d64 contEnergy, contX2, contHeatCapcity;
+    d64 contEnergy, contX2, contHeatCapacity;
 };
 
 d64 latticeX2(const Params& p, d64 beta) {
@@ -479,7 +479,7 @@ d64 latticeX2(const Params& p, d64 beta) {
     d64 s = 0.0;
     for (u32 q = 0; q < p.N; ++q) {
         const d64 h = (2.0 * p.m / dt)
-                        * (1.0 - std::cos(2.0 * std::number::pi * static_cast<d64>(q)
+                        * (1.0 - std::cos(2.0 * M_PI * static_cast<d64>(q)
                                           / static_cast<d64>(p.N)))
                     + dt * p.m * p.omega * p.omega;
         s += 1.0 / h;
