@@ -98,6 +98,15 @@ $(ANHARMONIC_TARGET): $(ANHARMONIC_SRC)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< $(LDFLAGS) -o $@
 
+PIMC_SRC = src/anharmonic_pimc.cpp
+PIMC_TARGET = build/anharmonic_pimc
+
+pimc: $(PIMC_TARGET)
+
+$(PIMC_TARGET): $(PIMC_SRC)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< $(LDFLAGS) -o $@
+
 
 TEST_SRC = tests/test_vec.cpp \
            tests/test_matrix.cpp \
@@ -108,6 +117,7 @@ TEST_SRC = tests/test_vec.cpp \
            tests/test_linalg_solve.cpp \
            tests/test_optimize.cpp \
            tests/test_ising.cpp \
+           tests/test_continuous.cpp \
            src/calculus/differentiation.cpp
 
 TEST_TARGET = build/tests
@@ -140,4 +150,4 @@ count:
 		xargs -0 wc -l
 
 
-.PHONY: all run anharmonic ising test clean rebuild count
+.PHONY: all run anharmonic pimc ising test clean rebuild count
